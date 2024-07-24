@@ -1,32 +1,33 @@
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/chrome-extension"
-import { CountButton } from "~features/count-button"
 
-import "~style.css"
+import React from "react";
+import "../style.css";
+import { RouterProvider, createMemoryRouter } from "react-router-dom";
 
-const PUBLISHABLE_KEY = process.env.PLASMO_PUBLIC_CLERK_PUBLISHABLE_KEY
+// Import the layouts
+import { RootLayout } from "./layouts/root-layout";
 
-if (!PUBLISHABLE_KEY) {
-  throw new Error('Please add the PLASMO_PUBLIC_CLERK_PUBLISHABLE_KEY to the .env.development file')
-}
+// Import the components
+import { SignInPage } from "./routes/sign-in";
+import { SignUpPage } from "./routes/sign-up";
+import { Index } from "./routes";
+import { Settings } from "./routes/settings";
 
-function IndexPopup() {
+// Create the router
+// This removes the need for an App.tsx file
+const router = createMemoryRouter([
+  {
+    element: <RootLayout />,
+    children: [
+      { path: "/", element: <Index /> },
+      { path: "/sign-in", element: <SignInPage /> },
+      { path: "/sign-up", element: <SignUpPage /> },
+      { path: "/settings", element: <Settings /> },
+    ],
+  },
+]);
+
+export default function PopupIndex() {
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <div className="plasmo-flex plasmo-items-center plasmo-justify-center plasmo-h-[600px] plasmo-w-[800px] plasmo-flex plasmo-flex-col">
-        <header className="plasmo-w-full">
-          <SignedOut>
-            <SignInButton mode="modal" />
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-        </header>
-        <main className="plasmo-grow">
-          <CountButton />
-        </main>
-      </div>
-    </ClerkProvider>
+    <RouterProvider router={router} />
   )
 }
-
-export default IndexPopup
