@@ -14,9 +14,15 @@
     "package:firefox": "turbo package:firefox"
   },
   "devDependencies": {
-    "prettier": "^3.2.5",
-    "turbo": "^2.0.9",
-    "typescript": "^5.4.5"
+    "prettier": "^3.3.3",
+    "turbo": "^2.0.10",
+    "typescript": "^5.5.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "braces": "^3.0.3",
+      "msgpackr": "^1.10.1"
+    }
   },
   "packageManager": "pnpm@8.15.6",
   "engines": {
