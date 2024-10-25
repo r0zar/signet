@@ -38,8 +38,9 @@
 			"groupSlug": "chrome-extension-major",
 			"matchFileNames": ["apps/chrome-extension/package.json"],
 			"matchUpdateTypes": ["major"],
-			"automerge": true,
-			"semanticCommitScope": "chrome-extension"
+			"automerge": false,
+			"semanticCommitScope": "chrome-extension",
+			"separateMajorMinor": true,
 		},
 {
 			"groupName": "Web App - Minor and Patch Dependency Update",
@@ -54,8 +55,9 @@
 			"groupSlug": "web-app-major",
 			"matchFileNames": ["apps/web-app/package.json"],
 			"matchUpdateTypes": ["major"],
-			"automerge": true,
-			"semanticCommitScope": "web-app"
+			"automerge": false,
+			"semanticCommitScope": "web-app",
+			"separateMajorMinor": true,
 		}
 	]
   
