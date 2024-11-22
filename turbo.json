@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "ui": "tui",
+  "ui": "stream",
   "tasks": {
     "build": {
       "dependsOn": [
@@ -74,36 +74,6 @@
         ".next/**",
         "!.next/cache/**"
       ]
-    },
-    "//#format": {
-      "outputs": [
-        "node_modules/.cache/.prettiercache"
-      ],
-      "cache": false
-    },
-    "format": {
-      "dependsOn": [
-        "^topo"
-      ],
-      "outputs": [
-        "node_modules/.cache/.prettiercache"
-      ],
-      "cache": false
-    },
-    "//#format:fix": {
-      "outputs": [
-        "node_modules/.cache/.prettiercache"
-      ],
-      "cache": false
-    },
-    "format:fix": {
-      "dependsOn": [
-        "^topo"
-      ],
-      "outputs": [
-        "node_modules/.cache/.prettiercache"
-      ],
-      "cache": false
     }
   }
 }
