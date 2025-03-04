@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.9" />
+    </linearGradient>
+    
+    <!-- Primary Color Gradient -->
+    <linearGradient id="primary-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c1121f" />
+      <stop offset="100%" stop-color="#ff4d6d" />
+    </linearGradient>
+    
+    <!-- Secondary Color Gradient -->
+    <linearGradient id="secondary-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8d99ae" />
+      <stop offset="100%" stop-color="#b8c1d1" />
+    </linearGradient>
+    
+    <!-- Shadow Filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.3" />
+    </filter>
+    
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feFlood flood-color="#c1121f" flood-opacity="0.3" result="color" />
+      <feComposite in="color" in2="blur" operator="in" result="glow" />
+      <feMerge>
+        <feMergeNode in="glow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Pattern for subnet -->
+    <pattern id="subnet-pattern" patternUnits="userSpaceOnUse" width="30" height="30" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="30" stroke="#c1121f" stroke-width="1" stroke-opacity="0.1" />
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="500" fill="url(#bg-gradient)" />
+  
+  <!-- Grid Lines -->
+  <g opacity="0.08">
+    <line x1="0" y1="100" x2="800" y2="100" stroke="#fff" stroke-width="1" />
+    <line x1="0" y1="200" x2="800" y2="200" stroke="#fff" stroke-width="1" />
+    <line x1="0" y1="300" x2="800" y2="300" stroke="#fff" stroke-width="1" />
+    <line x1="0" y1="400" x2="800" y2="400" stroke="#fff" stroke-width="1" />
+    <line x1="200" y1="0" x2="200" y2="500" stroke="#fff" stroke-width="1" />
+    <line x1="400" y1="0" x2="400" y2="500" stroke="#fff" stroke-width="1" />
+    <line x1="600" y1="0" x2="600" y2="500" stroke="#fff" stroke-width="1" />
+  </g>
+  
+  <!-- Base Layer (Bitcoin/Stacks) -->
+  <rect x="100" y="350" width="600" height="80" rx="5" ry="5" fill="#1e293b" filter="url(#shadow)" />
+  <text x="400" y="395" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Bitcoin / Stacks Blockchain</text>
+  
+  <!-- Blaze Protocol Layer -->
+  <rect x="150" y="230" width="500" height="80" rx="5" ry="5" fill="#0f172a" stroke="url(#primary-gradient)" stroke-width="2" filter="url(#shadow)" />
+  <text x="400" y="275" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Blaze Protocol Settlement Layer</text>
+  
+  <!-- Subnet Boxes -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="100" width="120" height="80" rx="5" ry="5" fill="url(#subnet-pattern)" stroke="url(#primary-gradient)" stroke-width="2" />
+    <text x="240" y="145" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Subnet 1</text>
+    <rect x="340" y="100" width="120" height="80" rx="5" ry="5" fill="url(#subnet-pattern)" stroke="url(#primary-gradient)" stroke-width="2" />
+    <text x="400" y="145" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Subnet 2</text>
+    <rect x="500" y="100" width="120" height="80" rx="5" ry="5" fill="url(#subnet-pattern)" stroke="url(#primary-gradient)" stroke-width="2" />
+    <text x="560" y="145" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Subnet 3</text>
+  </g>
+  
+  <!-- Signet Signer -->
+  <rect x="550" y="30" width="150" height="40" rx="20" ry="20" fill="url(#primary-gradient)" filter="url(#glow)" />
+  <text x="625" y="55" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Signet Signer</text>
+  
+  <!-- User -->
+  <circle cx="200" cy="50" r="20" fill="url(#secondary-gradient)" filter="url(#shadow)" />
+  <text x="200" y="55" text-anchor="middle" fill="#0f172a" font-family="Arial, sans-serif" font-size="14" font-weight="bold">User</text>
+  
+  <!-- App -->
+  <rect x="300" y="30" width="120" height="40" rx="5" ry="5" fill="#0f172a" stroke="url(#secondary-gradient)" stroke-width="2" filter="url(#shadow)" />
+  <text x="360" y="55" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Application</text>
+  
+  <!-- Connection Lines -->
+  <!-- User to App -->
+  <line x1="220" y1="50" x2="300" y2="50" stroke="#8d99ae" stroke-width="2" stroke-dasharray="5,5" />
+  
+  <!-- App to Signet Signer -->
+  <line x1="420" y1="50" x2="550" y2="50" stroke="url(#primary-gradient)" stroke-width="2" />
+  
+  <!-- App to Subnets -->
+  <path d="M 360 70 L 360 100" stroke="#8d99ae" stroke-width="2" />
+  <path d="M 360 70 L 240 100" stroke="#8d99ae" stroke-width="2" />
+  <path d="M 360 70 L 560 100" stroke="#8d99ae" stroke-width="2" />
+  
+  <!-- Subnets to Blaze Settlement -->
+  <path d="M 240 180 L 240 230" stroke="url(#primary-gradient)" stroke-width="2" />
+  <path d="M 400 180 L 400 230" stroke="url(#primary-gradient)" stroke-width="2" />
+  <path d="M 560 180 L 560 230" stroke="url(#primary-gradient)" stroke-width="2" />
+  
+  <!-- Blaze to Blockchain -->
+  <path d="M 400 310 L 400 350" stroke="#8d99ae" stroke-width="3" stroke-dasharray="10,5" />
+  
+  <!-- Labels -->
+  <g filter="url(#shadow)">
+    <text x="130" y="130" text-anchor="end" fill="white" font-family="Arial, sans-serif" font-size="12">200ms</text>
+    <text x="130" y="150" text-anchor="end" fill="white" font-family="Arial, sans-serif" font-size="12">Preconfirmation</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <text x="130" y="260" text-anchor="end" fill="white" font-family="Arial, sans-serif" font-size="12">Periodic</text>
+    <text x="130" y="280" text-anchor="end" fill="white" font-family="Arial, sans-serif" font-size="12">Settlement</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <text x="130" y="380" text-anchor="end" fill="white" font-family="Arial, sans-serif" font-size="12">On-chain</text>
+    <text x="130" y="400" text-anchor="end" fill="white" font-family="Arial, sans-serif" font-size="12">Security</text>
+  </g>
+  
+  <!-- Legend -->
+  <rect x="600" y="430" width="180" height="50" rx="5" ry="5" fill="rgba(0,0,0,0.5)" filter="url(#shadow)" />
+  <circle cx="620" cy="445" r="5" fill="url(#primary-gradient)" />
+  <text x="635" y="450" fill="white" font-family="Arial, sans-serif" font-size="12">Preconfirmation Path</text>
+  
+  <circle cx="620" cy="465" r="5" fill="url(#secondary-gradient)" />
+  <text x="635" y="470" fill="white" font-family="Arial, sans-serif" font-size="12">Settlement Path</text>
+</svg>

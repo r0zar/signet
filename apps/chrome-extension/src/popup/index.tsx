@@ -11,6 +11,7 @@ import { SignUpPage } from "./routes/sign-up";
 import { Settings } from "./routes/settings";
 import { SDKFeatures } from "./routes/sdk-features";
 import { Home } from "./routes/home";
+import { SendReceive } from "./routes/send-receive";
 
 // Create the router
 // This removes the need for an App.tsx file
@@ -22,7 +23,8 @@ const router = createMemoryRouter([
       { path: "/sign-in", element: <SignInPage /> },
       { path: "/sign-up", element: <SignUpPage /> },
       { path: "/settings", element: <Settings /> },
-      { path: "/sdk-features", element: <SDKFeatures /> }
+      { path: "/sdk-features", element: <SDKFeatures /> },
+      { path: "/send-receive", element: <SendReceive /> }
     ],
   },
 ]);
