@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo build",
     "build:firefox": "turbo build:firefox",
+    "build:webapp": "turbo build --filter=web-app",
     "debug": "turbo debug",
     "debug:firefox": "turbo debug:firefox",
     "dev": "turbo dev",
