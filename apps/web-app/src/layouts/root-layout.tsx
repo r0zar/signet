@@ -43,6 +43,8 @@ export default function RootLayout() {
         </div>
       </header>
       <main className="min-h-[calc(100vh-80px)]">
+        {/* Marker for Signet extension detection */}
+        <div id="signet-extension-marker" style={{ display: 'none' }}></div>
         <Outlet />
       </main>
       <footer className="py-8 px-6 bg-black border-t border-primary-legacy/10">

@@ -1,5 +1,35 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 text-white bg-primary-legacy rounded-lg shadow-lg hover:bg-primary-dark transition-all duration-300;
+  }
+  
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-4 py-2 text-white bg-transparent border border-white/20 rounded-lg hover:border-primary-legacy/30 hover:bg-primary-legacy/10 transition-all duration-300;
+  }
+  
+  .card-charisma {
+    @apply bg-gradient-to-b from-[rgba(17,17,27,0.05)] to-[rgba(17,17,27,0.2)] backdrop-blur-sm border border-white/10 rounded-lg transition-all duration-300 shadow-xl;
+  }
+  
+  .feature-card {
+    @apply bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg transition-all duration-300 h-full shadow-xl;
+  }
+  
+  .shadow-glow {
+    @apply shadow-[0_0_15px_rgba(193,18,31,0.4)];
+  }
+  
+  .shadow-glow-sm {
+    @apply shadow-[0_0_10px_rgba(193,18,31,0.3)];
+  }
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -1011,6 +1041,50 @@ html, body {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes borderPulse {
+  0% {
+    border-color: rgba(193, 18, 31, 0.3);
+  }
+  50% {
+    border-color: rgba(193, 18, 31, 0.8);
+  }
+  100% {
+    border-color: rgba(193, 18, 31, 0.3);
+  }
+}
+
+.border-pulse {
+  animation: borderPulse 2s infinite;
+}
+
 /* Code display styles */
 pre {
   margin: 0;
@@ -1068,6 +1142,15 @@ pre {
   .lg\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* Shadow glow effects */
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(193, 18, 31, 0.4);
+}
+
+.shadow-glow-sm {
+  box-shadow: 0 0 10px rgba(193, 18, 31, 0.3);
 }
 
 /* Light color scheme adaptations */

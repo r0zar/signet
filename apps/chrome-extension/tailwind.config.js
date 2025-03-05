@@ -2,7 +2,7 @@
 module.exports = {
   content: ["./src/**/*.{tsx,html}"],
   darkMode: "class",
-  prefix: "plasmo-",
+  // Removed prefix to make Tailwind classes work without prefixing
   theme: {
     extend: {
       colors: {

@@ -18,8 +18,12 @@
   "dependencies": {
     "@clerk/chrome-extension": "^2.0.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "@stacks/connect": "^8.1.4",
+    "@stacks/transactions": "^7.0.4",
+    "@stacks/wallet-sdk": "^7.0.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.4.10",
     "plasmo": "^0.89.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -42,12 +46,22 @@
   "manifest": {
     "permissions": [
       "cookies",
-      "storage"
+      "storage",
+      "scripting",
+      "activeTab"
     ],
     "host_permissions": [
       "$CLERK_FRONTEND_API/*",
-      "$PLASMO_PUBLIC_CLERK_SYNC_HOST/*"
+      "$PLASMO_PUBLIC_CLERK_SYNC_HOST/*",
+      "https://trusted-app-1.com/*",
+      "https://trusted-app-2.com/*",
+      "http://localhost:*/*",
+      "<all_urls>"
     ],
-    "key": "$CRX_PUBLIC_KEY"
+    "key": "$CRX_PUBLIC_KEY",
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'",
+      "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'unsafe-inline' 'unsafe-eval'; child-src 'self'"
+    }
   }
 }
