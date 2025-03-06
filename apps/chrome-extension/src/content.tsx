@@ -1,13 +1,6 @@
-import cssText from "data-text:~style.css"
+import { Cl, signStructuredData } from "@stacks/transactions"
+import { generateWallet } from "@stacks/wallet-sdk"
 import type { PlasmoCSConfig } from "plasmo"
-import { useState, useEffect } from "react"
-
-import { CountButton } from "~features/count-button"
-import { initializeAPI } from "~utils/api-injector"
-import { setupExtensionNotificationHelpers, injectNotificationHelpers } from "~utils/notification-helpers"
-import { setupPrimaryMessageHandler, setupSecondaryMessageHandler } from "~utils/message-handlers"
-
-// Global types are declared in src/types/global.d.ts
 
 // Extension configuration
 export const config: PlasmoCSConfig = {
@@ -18,26 +11,41 @@ export const config: PlasmoCSConfig = {
 // Initialize Signet Extension Components
 // =============================================
 
-// Setup message handlers
-setupPrimaryMessageHandler();
-setupSecondaryMessageHandler();
+// Set up the primary message handler for structured data signing
+window.addEventListener("message", async (event: MessageEvent) => {
+  console.log("[SIGNET] New event:", event.data);
 
-// Setup notification helpers
-setupExtensionNotificationHelpers();
+  // Check if this looks like a structured data request
+  if (event.data.message.type === "SIGN_REQUEST") {
+    // Create a Stacks private key from the provided key
+    // Using a test key for development - this should be replaced with proper key management
+    const wallet = await generateWallet({
+      secretKey: 'grid moral stone clip annual method used car fold summer farm next miss mistake ability trip reason clip gallery sound shrug fix raise behind',
+      password: 'test-password'
+    });
+    const privateKey = wallet.accounts[0].stxPrivateKey;
+    const domain = Cl.tuple({
+      name: Cl.stringAscii('name'),
+      version: Cl.stringAscii('v0'),
+      'chain-id': Cl.uint(1),
+    });
+    // Create a structured data message
+    const cvMessage = event.data.message.data
+    // TODO: Convert into clarity value
+    const message = Cl.tuple({});
 
-// Initialize API injection
-initializeAPI();
+    // Sign the structured data hash
+    const signature = signStructuredData({
+      domain,
+      message,
+      privateKey
+    });
+    chrome.runtime.sendMessage({
+      type: "SIGN_RESPONSE",
+    })
+  }
+});
 
-// Execute injection when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', injectNotificationHelpers);
-} else {
-  injectNotificationHelpers();
-}
-
-// Add helper message to console for testing
-console.log("[Signet Extension] Content script loaded on:", window.location.href);
-console.log("[Signet Extension] Visual notification system ready.");
 
 // =============================================
 // React Overlay Component
@@ -46,7 +54,6 @@ console.log("[Signet Extension] Visual notification system ready.");
 const PlasmoOverlay = () => {
   return (
     <div className="plasmo-z-50 plasmo-flex plasmo-fixed plasmo-top-32 plasmo-right-8">
-      {/* <CountButton /> */}
     </div>
   )
 }
