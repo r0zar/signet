@@ -52,30 +52,30 @@ export default function SignetController() {
           setVisible(prev => !prev) // Use function form to avoid closure issues
           addMessage(`Extension toggled via message`)
         }
-        
+
         // Handle wallet update messages
         else if (event.data.type === ExtensionMessageType.WALLET_UPDATE) {
           // No function dependency here, just data processing
           const data = event.data as WalletUpdateMessage;
-          
+
           // Update wallet data
           setWalletData({
             address: data.address,
             balance: data.balance,
             lastUpdate: Date.now()
           });
-          
+
           // Create a notification only if delta and reason are present
           if (data.delta && data.reason) {
             const isPositiveChange = data.delta.startsWith('+');
             const notificationColor = isPositiveChange ? colors.neonGreen : colors.neonOrange;
-            
+
             showSystemNotification(
               `WALLET ${isPositiveChange ? 'INCREASE' : 'DECREASE'}`,
               `${data.address.substring(0, 6)}...${data.address.substring(data.address.length - 4)} ${data.delta}`,
               {
-                details: data.reason + (data.relatedTransaction?.marketName 
-                  ? ` - ${data.relatedTransaction.marketName}` 
+                details: data.reason + (data.relatedTransaction?.marketName
+                  ? ` - ${data.relatedTransaction.marketName}`
                   : ''),
                 color: notificationColor,
                 duration: 5000,
@@ -285,9 +285,9 @@ export default function SignetController() {
         transition={{ duration: 0.3 }}
         style={{
           position: 'fixed',
-          top: '20px',
+          top: '32px',
           left: '20px',
-          width: '280px',
+          width: '320px',
           background: `linear-gradient(180deg, ${colors.spaceBlack} 0%, ${colors.spaceVoid} 100%)`,
           borderRadius: '6px',
           overflow: 'hidden',
