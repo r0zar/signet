@@ -1,178 +1,115 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 210 40% 98%;
-    
-    --card: 0 0% 5%;
-    --card-foreground: 210 40% 96.1%;
-    
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    
-    --primary: 0.99 83% 41%;
-    --primary-foreground: 210 40% 98%;
-    
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 0.99 47.4% 11.2%;
-    
-    --accent: 0.99 83% 41%;
-    --accent-foreground: 210 40% 98%;
-    
-    --muted: 217.2 32.6% 12%;
-    --muted-foreground: 215 20.2% 75%;
-    
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --ring: 215 20.2% 65.1%;
-    
-    --radius: 0.5rem;
-
-    /* Animation */
-    --shimmer-from: -100%;
-    --shimmer-to: 100%;
-  }
+/* Variables */
+:root {
+  --background: 0 0% 0%;
+  --foreground: 210 40% 98%;
+  --card: 0 0% 5%;
+  --card-foreground: 210 40% 96.1%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --primary: 0.99 83% 41%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 0.99 47.4% 11.2%;
+  --accent: 0.99 83% 41%;
+  --accent-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 12%;
+  --muted-foreground: 215 20.2% 75%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 215 20.2% 65.1%;
+  --radius: 0.5rem;
+  --shimmer-from: -100%;
+  --shimmer-to: 100%;
 }
 
-@layer utilities {
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .hide-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-  
-  /* Custom scrollbar for Chrome, Safari and Opera */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
-    transition: background 0.2s ease;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(193, 18, 31, 0.5);
-  }
-
-  /* Firefox */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
-  }
+/* Animations */
+@keyframes signet-shimmer {
+  0% { transform: translateX(var(--shimmer-from)); }
+  100% { transform: translateX(var(--shimmer-to)); }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(var(--shimmer-from));
-  }
-  100% {
-    transform: translateX(var(--shimmer-to));
-  }
+@keyframes signet-pulse-glow {
+  0%, 100% { opacity: 0.8; box-shadow: 0 0 5px rgba(125, 249, 255, 0.5); }
+  50% { opacity: 1; box-shadow: 0 0 15px rgba(125, 249, 255, 0.8); }
 }
 
-.animate-shimmer {
-  animation: shimmer 2s infinite;
+/* Class-based utilities with signet- prefix */
+.signet-animate-shimmer {
+  animation: signet-shimmer 2s infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.signet-animate-pulse-glow {
+  animation: signet-pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.glass-effect {
+.signet-glass-effect {
   background: linear-gradient(180deg, rgba(17, 17, 27, 0.05) 0%, rgba(17, 17, 27, 0.2) 100%);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-body {
-  background-color: #000000 !important;
-  color: white;
-  font-family: 'Inter', sans-serif;
+/* Utility classes */
+.signet-hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-html {
-  background-color: #000000 !important;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+.signet-hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Apply custom scrollbar to all elements by default */
-::-webkit-scrollbar {
+.signet-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-::-webkit-scrollbar-track {
+.signet-scrollbar::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb {
+.signet-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
   transition: background 0.2s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.signet-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(193, 18, 31, 0.5);
 }
 
-/* Remove height fix that was breaking layout */
-
-body {
+.signet-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
 }
 
-.logo-shadow {
+.signet-logo-shadow {
   filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.25));
 }
 
-.main-container {
-  min-width: 350px;
-  min-height: 5px;
+.signet-container {
+  position: fixed;
+  z-index: 9999;
+  font-family: 'Inter', sans-serif;
+  color: white;
+  box-sizing: border-box;
 }
 
-@media (min-width: 350px) {
-  .main-container {
-    min-width: 350px;
-    min-height: 5px;
-  }
-}
-
-/* Gradient buttons */
-.btn-gradient {
+/* Component styles */
+.signet-btn-gradient {
   background: linear-gradient(90deg, #c1121f 0%, #ff4d6d 100%);
   border: none;
   transition: all 0.2s ease;
 }
 
-.btn-gradient:hover {
+.signet-btn-gradient:hover {
   background: linear-gradient(90deg, #a8101b 0%, #e64361 100%);
   box-shadow: 0 4px 12px rgba(193, 18, 31, 0.3);
 }
 
-/* Card styles */
-.card-charisma {
+.signet-card {
   background-color: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius);
@@ -181,13 +118,12 @@ body {
   transition: all 0.2s ease;
 }
 
-.card-charisma:hover {
+.signet-card:hover {
   border-color: rgba(193, 18, 31, 0.2);
   box-shadow: 0 8px 24px rgba(193, 18, 31, 0.1);
 }
 
-/* Glassmorphism card effect */
-.glass-card {
+.signet-glass-card {
   background: linear-gradient(180deg, rgba(17, 17, 27, 0.05) 0%, rgba(17, 17, 27, 0.2) 100%);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -196,158 +132,7 @@ body {
   transition: all 0.2s ease;
 }
 
-.glass-card:hover {
+.signet-glass-card:hover {
   border-color: rgba(193, 18, 31, 0.2);
   box-shadow: 0 8px 24px rgba(193, 18, 31, 0.1);
-}
-
-/* Custom radio buttons */
-input[type="radio"] {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  position: relative;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-input[type="radio"]:checked {
-  border-color: #c1121f;
-  background-color: transparent;
-}
-
-input[type="radio"]:checked::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #c1121f;
-}
-
-input[type="radio"]:focus {
-  box-shadow: 0 0 0 2px rgba(193, 18, 31, 0.3);
-}
-
-/* Custom checkboxes */
-input[type="checkbox"] {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  position: relative;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-input[type="checkbox"]:checked {
-  border-color: #c1121f;
-  background-color: #c1121f;
-}
-
-input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 5px;
-  width: 6px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-input[type="checkbox"]:focus {
-  box-shadow: 0 0 0 2px rgba(193, 18, 31, 0.3);
-}
-
-/* Custom toggle switches */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-switch label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: block;
-  border-radius: 12px;
-  background-color: rgba(17, 17, 27, 0.5);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.toggle-switch label::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: white;
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.toggle-switch input:checked + label {
-  background-color: #c1121f;
-}
-
-.toggle-switch input:checked + label::after {
-  transform: translateX(16px);
-}
-
-/* Custom select */
-select {
-  appearance: none;
-  background-color: hsl(var(--card) / 0.4) !important;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 16px;
-  padding-right: 30px !important;
-}
-
-/* Custom input styling */
-input[type="text"], 
-input[type="password"],
-input[type="email"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-textarea {
-  background-color: hsl(var(--card) / 0.4) !important;
-  border-color: hsl(var(--border)) !important;
-  color: hsl(var(--foreground));
-}
-
-input[type="text"]:focus, 
-input[type="password"]:focus,
-input[type="email"]:focus,
-input[type="number"]:focus,
-input[type="search"]:focus,
-input[type="tel"]:focus,
-input[type="url"]:focus,
-textarea:focus {
-  border-color: #c1121f !important;
-  box-shadow: 0 0 0 2px rgba(193, 18, 31, 0.25) !important;
 }
