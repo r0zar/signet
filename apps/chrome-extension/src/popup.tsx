@@ -4,38 +4,480 @@ import "./style.css" // Import the Tailwind CSS styles
 
 function IndexPopup() {
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connected">("connected")
+  const [systemStatus, setSystemStatus] = useState({
+    power: 100,
+    signal: 85,
+    shield: 92
+  })
+
+  // Virtual console typing effect
+  const [consoleText, setConsoleText] = useState("")
+  const fullConsoleText = "> SIGNET SYSTEM ONLINE\n> SECURE CONNECTION ESTABLISHED\n> BLAZE PROTOCOL ACTIVE"
+
+  useEffect(() => {
+    let index = 0
+    const timer = setInterval(() => {
+      if (index < fullConsoleText.length) {
+        setConsoleText(fullConsoleText.substring(0, index + 1))
+        index++
+      } else {
+        clearInterval(timer)
+      }
+    }, 30)
+
+    return () => clearInterval(timer)
+  }, [])
 
   return (
-    <div className="min-h-[50px] w-[360px] text-white font-sans bg-gradient-to-b from-gray-900 to-black">
-      {/* Header Bar with Chrome-like window controls */}
-      <div className="bg-gray-900 border-b border-gray-800 p-3 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-[#5546FF]/10 flex items-center justify-center border border-[#5546FF]/30 mr-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#5546FF]" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm2.5 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45 4a2.5 2.5 0 10-4.9 0h4.9zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold text-white">Signet Signer</h1>
-            <div className={`text-xs flex items-center ${connectionStatus === "connected" ? "text-green-400" : "text-yellow-400"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full mr-1 ${connectionStatus === "connected" ? "bg-green-500" : "bg-yellow-500"}`}></span>
-              {connectionStatus === "connected" ? "Connected" : "Connecting..."}
-            </div>
-          </div>
+    <div
+      style={{
+        width: '360px',
+        height: '500px',
+        background: 'linear-gradient(180deg, #0D1117 0%, #010409 100%)',
+        border: '1px solid rgba(125, 249, 255, 0.3)',
+        borderRadius: '0px',
+        overflow: 'hidden',
+        color: '#fff',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        position: 'relative',
+        boxShadow: '0 0 20px rgba(0, 0, 0, 0.8), 0 0 5px rgba(125, 249, 255, 0.5)'
+      }}
+    >
+      {/* Top bar with status indicators */}
+      <div style={{
+        background: 'linear-gradient(90deg, rgba(13, 17, 23, 0.8) 0%, rgba(125, 249, 255, 0.1) 50%, rgba(13, 17, 23, 0.8) 100%)',
+        padding: '8px 12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '1px solid rgba(125, 249, 255, 0.3)',
+        position: 'relative'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <motion.div
+            animate={{
+              boxShadow: ['0 0 2px rgba(125, 249, 255, 0.8)', '0 0 8px rgba(125, 249, 255, 0.8)', '0 0 2px rgba(125, 249, 255, 0.8)']
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              backgroundColor: '#7DF9FF',
+            }}
+          />
+          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#7DF9FF' }}>SIGNET</span>
         </div>
-        <div className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800 transition-colors cursor-pointer">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-          </svg>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>SIGNAL</span>
+            <motion.div
+              style={{
+                width: '30px',
+                height: '6px',
+                background: 'linear-gradient(90deg, #7DF9FF 0%, #36C758 100%)',
+                borderRadius: '3px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <motion.div
+                animate={{ x: ['-100%', '100%'] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%)'
+                }}
+              />
+            </motion.div>
+          </div>
+          <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>PWR</span>
+            <motion.div
+              style={{
+                width: '30px',
+                height: '6px',
+                background: 'linear-gradient(90deg, #DA2FB7 0%, #8C32C1 100%)',
+                borderRadius: '3px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <motion.div
+                animate={{ x: ['-100%', '100%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%)'
+                }}
+              />
+            </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-gray-800 mt-auto py-2 px-4 flex justify-between items-center text-xs text-gray-500">
-        <div>Signet v0.1.0</div>
-        <div className="flex space-x-3">
-          <a href="#" className="hover:text-[#5546FF] transition-colors">Docs</a>
-          <a href="#" className="hover:text-[#5546FF] transition-colors">Support</a>
+      {/* Main interface section */}
+      <div style={{
+        position: 'relative',
+        padding: '16px',
+        height: 'calc(100% - 100px)', // Account for top and bottom bars
+        overflow: 'hidden'
+      }}>
+        {/* Background grid lines */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: `
+            linear-gradient(to right, rgba(125, 249, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(125, 249, 255, 0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px',
+          zIndex: 0
+        }} />
+
+        {/* Holographic display area */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+          style={{
+            background: 'rgba(13, 17, 23, 0.6)',
+            border: '1px solid rgba(125, 249, 255, 0.3)',
+            borderRadius: '6px',
+            padding: '12px',
+            marginBottom: '16px',
+            position: 'relative',
+            overflow: 'hidden',
+            zIndex: 1,
+            boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          {/* Panel border effect - top */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '2px',
+              background: 'linear-gradient(90deg, transparent 0%, #7DF9FF 50%, transparent 100%)',
+              opacity: 0.8
+            }}
+            animate={{
+              opacity: [0.4, 0.8, 0.4]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'easeInOut'
+            }}
+          >
+            <motion.div
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              style={{
+                width: '50%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%)'
+              }}
+            />
+          </motion.div>
+
+          {/* 3D Hologram placeholder */}
+          <div style={{
+            margin: '20px auto',
+            width: '120px',
+            height: '120px',
+            position: 'relative'
+          }}>
+            <motion.div
+              animate={{
+                rotateY: [0, 360],
+                boxShadow: [
+                  '0 0 15px rgba(125, 249, 255, 0.5)',
+                  '0 0 25px rgba(125, 249, 255, 0.7)',
+                  '0 0 15px rgba(125, 249, 255, 0.5)'
+                ]
+              }}
+              transition={{
+                rotateY: { duration: 8, repeat: Infinity, ease: 'linear' },
+                boxShadow: { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+              }}
+              style={{
+                width: '100%',
+                height: '100%',
+                background: 'radial-gradient(circle, rgba(125, 249, 255, 0.2) 0%, rgba(13, 17, 23, 0.2) 100%)',
+                border: '1px solid rgba(125, 249, 255, 0.6)',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <motion.div
+                animate={{
+                  rotateX: [0, 360],
+                  rotateZ: [0, -360],
+                }}
+                transition={{
+                  duration: 12,
+                  repeat: Infinity,
+                  ease: 'linear'
+                }}
+                style={{
+                  width: '70%',
+                  height: '70%',
+                  borderRadius: '2px',
+                  background: 'radial-gradient(circle, rgba(125, 249, 255, 0.1) 0%, rgba(125, 249, 255, 0.4) 100%)',
+                  border: '1px solid rgba(125, 249, 255, 0.6)',
+                  boxShadow: '0 0 15px rgba(125, 249, 255, 0.5)',
+                  position: 'relative'
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '100%',
+                  height: '1px',
+                  background: 'rgba(125, 249, 255, 0.8)',
+                  transform: 'translate(-50%, -50%)'
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '1px',
+                  height: '100%',
+                  background: 'rgba(125, 249, 255, 0.8)',
+                  transform: 'translate(-50%, -50%)'
+                }} />
+              </motion.div>
+            </motion.div>
+
+            {/* Scanning lines effect */}
+            <motion.div
+              animate={{ top: ['0%', '100%', '0%'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                width: '100%',
+                height: '2px',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(125, 249, 255, 0.8) 50%, transparent 100%)',
+                boxShadow: '0 0 5px rgba(125, 249, 255, 0.8)'
+              }}
+            />
+          </div>
+
+          {/* Status data */}
+          <div style={{
+            fontSize: '10px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: '10px'
+          }}>
+            <div>STATUS: ACTIVE</div>
+            <div>POWER: {systemStatus.power}%</div>
+            <div>SHIELD: {systemStatus.shield}%</div>
+          </div>
+        </motion.div>
+
+        {/* Terminal/Console section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          style={{
+            background: 'rgba(1, 4, 9, 0.8)',
+            border: '1px solid rgba(125, 249, 255, 0.3)',
+            borderRadius: '6px',
+            padding: '12px',
+            position: 'relative',
+            height: '100px',
+            zIndex: 1,
+            overflow: 'hidden'
+          }}
+        >
+          {/* Panel border effect - shimmer at top */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '2px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(125, 249, 255, 0.6) 50%, transparent 100%)',
+              opacity: 0.6
+            }}
+          >
+            <motion.div
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+              style={{
+                width: '30%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%)'
+              }}
+            />
+          </motion.div>
+
+          {/* Panel detail - "circuit" lines */}
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            right: '6px',
+            width: '25px',
+            height: '30px',
+            zIndex: 2
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '0px',
+              right: '0px',
+              width: '2px',
+              height: '100%',
+              background: 'rgba(125, 249, 255, 0.15)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '8px',
+              right: '0px',
+              width: '10px',
+              height: '2px',
+              background: 'rgba(125, 249, 255, 0.15)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '18px',
+              right: '0px',
+              width: '15px',
+              height: '2px',
+              background: 'rgba(125, 249, 255, 0.15)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '28px',
+              right: '0px',
+              width: '5px',
+              height: '2px',
+              background: 'rgba(125, 249, 255, 0.15)'
+            }} />
+          </div>
+
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'repeating-linear-gradient(0deg, rgba(125, 249, 255, 0.03) 0px, rgba(125, 249, 255, 0.03) 1px, transparent 1px, transparent 2px)',
+            pointerEvents: 'none'
+          }} />
+
+          <pre style={{
+            fontFamily: 'monospace',
+            fontSize: '10px',
+            color: '#7DF9FF',
+            margin: 0,
+            height: '100%',
+            overflow: 'hidden'
+          }}>
+            {consoleText}
+            <motion.span
+              animate={{ opacity: [0, 1] }}
+              transition={{ duration: 0.8, repeat: Infinity }}
+            >_</motion.span>
+          </pre>
+        </motion.div>
+      </div>
+
+      {/* Bottom control bar */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        background: 'linear-gradient(180deg, rgba(13, 17, 23, 0.9) 0%, #0D1117 100%)',
+        padding: '12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderTop: '1px solid rgba(125, 249, 255, 0.3)',
+        zIndex: 2
+      }}>
+        {/* System readout */}
+        <div style={{ fontSize: '9px', color: 'rgba(255, 255, 255, 0.7)' }}>
+          <div>SYS: V0.1.0</div>
+          <div>ENV: BROWSER</div>
+        </div>
+
+        {/* Control buttons */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(125, 249, 255, 0.8)' }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              background: 'rgba(125, 249, 255, 0.1)',
+              border: '1px solid rgba(125, 249, 255, 0.4)',
+              borderRadius: '4px',
+              padding: '6px 10px',
+              fontSize: '10px',
+              color: '#7DF9FF',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <div style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: '#7DF9FF',
+              boxShadow: '0 0 4px #7DF9FF'
+            }} />
+            SCAN
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(218, 47, 183, 0.8)' }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              background: 'rgba(218, 47, 183, 0.1)',
+              border: '1px solid rgba(218, 47, 183, 0.4)',
+              borderRadius: '4px',
+              padding: '6px 10px',
+              fontSize: '10px',
+              color: '#DA2FB7',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <div style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: '#DA2FB7',
+              boxShadow: '0 0 4px #DA2FB7'
+            }} />
+            CONNECT
+          </motion.button>
         </div>
       </div>
     </div>
