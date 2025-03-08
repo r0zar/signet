@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@clerk/chrome-extension": "^2.0.0",
+    "@plasmohq/messaging": "^0.7.1",
+    "@plasmohq/storage": "^1.9.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@react-spring/three": "^9.7.5",
     "@react-three/fiber": "^9.0.4",

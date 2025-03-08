@@ -30,7 +30,7 @@ window.postMessage({
   title: 'TRANSACTION CONFIRMATION',
   message: 'Please confirm this transaction',
   details: 'Transfer 0.5 sBTC to SP...',
-  notificationType: 'TRANSACTION',
+  notificationType: 'OP_TRANSFER',
   duration: 10000 // Optional auto-dismiss after 10 seconds
 }, '*');
 ```
@@ -71,7 +71,7 @@ window.postMessage({
   details: 'Additional details here', // Optional
   color: 'rgb(125, 249, 255)', // Optional
   duration: 5000, // Optional auto-dismiss after 5 seconds
-  notificationType: 'TRANSACTION' // Optional, defaults to 'SYSTEM'
+  notificationType: 'OP_TRANSFER' // Optional, defaults to 'SYSTEM'
 }, '*');
 
 // Hide current notification
@@ -84,7 +84,7 @@ window.postMessage({
   type: 'SHOW_NOTIFICATION',
   title: 'NFT PURCHASE SUCCESSFUL',
   message: 'You have successfully purchased an NFT',
-  notificationType: 'TRANSACTION',
+  notificationType: 'OP_TRANSFER',
   // Rich content features
   imageUrl: 'https://example.com/nft-image.jpg',
   htmlContent: `
@@ -135,7 +135,7 @@ Signet supports several notification types with different behaviors:
      title: 'CONFIRM TRANSACTION',
      message: 'Please confirm this transaction',
      details: 'Send 0.1 sBTC to SP...',
-     notificationType: 'TRANSACTION'
+     notificationType: 'OP_TRANSFER'
    }, '*');
    ```
 
@@ -364,7 +364,7 @@ For TypeScript users, here are the key type definitions:
 
 ```typescript
 // Notification types
-type NotificationType = 'TRANSACTION' | 'OP_PREDICT' | 'SYSTEM' | 'ERROR';
+type NotificationType = 'OP_TRANSFER' | 'OP_PREDICT' | 'SYSTEM' | 'ERROR';
 
 // Extension message types
 enum ExtensionMessageType {

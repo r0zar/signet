@@ -28,8 +28,5 @@
   "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=18"
-  },
-  "dependencies": {
-    "signet-sdk": "^0.1.1"
   }
 }
