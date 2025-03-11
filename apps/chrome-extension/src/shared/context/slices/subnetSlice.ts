@@ -21,7 +21,6 @@ export interface SubnetActions {
   mineAllPendingBlocks: (batchSize?: number) => Promise<Record<string, TransactionResult>>
   refreshBalances: (address?: string) => Promise<void>
   setSigner: (address: string) => Promise<void>
-  generateSignature: (to: string, amount: number, nonce: number, subnetId: string) => Promise<string>
   refreshStatus: () => Promise<Record<string, Status>>
 }
 
@@ -207,22 +206,6 @@ export function useSubnetSlice(): SubnetSlice {
     }
   }
 
-  // Signature operations
-  const generateSignature = async (to: string, amount: number, nonce: number, subnetId: string): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      return await sendMessage<string>("generateSignature", { to, amount, nonce, subnetId });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to generate signature";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   return {
     // State
     status,
@@ -240,7 +223,6 @@ export function useSubnetSlice(): SubnetSlice {
     mineAllPendingBlocks,
     refreshBalances,
     setSigner: updateSigner,
-    generateSignature,
     refreshStatus
   }
 }

@@ -314,7 +314,7 @@ export class Subnet {
                     Cl.uint(amount)
                 ],
                 network: STACKS_MAINNET,
-                senderAddress: data.signer
+                senderAddress: this.signer
             });
 
             return result.type === ClarityType.ResponseOk;
@@ -339,7 +339,7 @@ export class Subnet {
                     Cl.uint(claim.receiptId)
                 ],
                 network: STACKS_MAINNET,
-                senderAddress: claim.signer
+                senderAddress: this.signer
             });
 
             return result.type === ClarityType.ResponseOk;
@@ -350,7 +350,7 @@ export class Subnet {
     }
 
     async validateTransferOperation(operation: Transfer): Promise<void> {
-        if (!operation.to || !operation.signer || !operation.signature) {
+        if (!operation.to || !operation.signature) {
             throw new Error('Invalid transfer operation: missing required fields');
         }
         if (operation.amount <= 0) {
@@ -367,7 +367,7 @@ export class Subnet {
     }
 
     async validatePredictionOperation(operation: Prediction): Promise<void> {
-        if (!operation.signer || !operation.signature) {
+        if (!operation.signature) {
             throw new Error('Invalid prediction operation: missing required fields');
         }
         if (operation.amount <= 0) {
@@ -389,7 +389,7 @@ export class Subnet {
     }
 
     async validateClaimOperation(operation: ClaimReward): Promise<void> {
-        if (!operation.signer || !operation.signature) {
+        if (!operation.signature) {
             throw new Error('Invalid claim operation: missing required fields');
         }
         if (operation.nonce <= 0) {

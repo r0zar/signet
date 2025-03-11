@@ -148,14 +148,136 @@ export function MempoolTab() {
           scrollbarColor: `${colors.cyber} rgba(1, 4, 9, 0.5)`,
         }}>
           {txQueueSize === 0 ? (
-            <div style={{
-              padding: '24px 16px',
-              textAlign: 'center',
-              color: colors.steel,
-              fontSize: '14px'
-            }}>
-              No pending transactions in mempool
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px 16px',
+                height: '210px',
+                gap: '16px'
+              }}
+            >
+              {/* Empty mempool illustration */}
+              <motion.div
+                animate={{ 
+                  y: [0, -8, 0],
+                  opacity: [0.6, 1, 0.6]
+                }}
+                transition={{ 
+                  duration: 4, 
+                  repeat: Infinity, 
+                  ease: 'easeInOut' 
+                }}
+                style={{
+                  position: 'relative',
+                  width: '80px',
+                  height: '80px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Outer ring */}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    position: 'absolute',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    border: `1px dashed ${colors.cyber}30`,
+                    boxShadow: `0 0 20px ${colors.cyber}20 inset`
+                  }}
+                />
+                
+                {/* Middle ring */}
+                <motion.div
+                  animate={{ rotate: -180 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    position: 'absolute',
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    border: `1px dashed ${colors.cyber}50`
+                  }}
+                />
+                
+                {/* Icon in center */}
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${colors.cyber}30 0%, transparent 70%)`,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  color: colors.cyber,
+                  fontSize: '16px'
+                }}>
+                  ⚡
+                </div>
+              </motion.div>
+              
+              {/* Text content */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <div style={{
+                  color: colors.white,
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  textAlign: 'center'
+                }}>
+                  Mempool Empty
+                </div>
+                <div style={{
+                  color: colors.steel,
+                  fontSize: '12px',
+                  textAlign: 'center',
+                  maxWidth: '240px',
+                  lineHeight: '1.5'
+                }}>
+                  Transactions will appear here when they're ready to be mined into the blockchain
+                </div>
+              </div>
+              
+              {/* Refresh button */}
+              <motion.button
+                whileHover={{ scale: 1.05, background: `rgba(125, 249, 255, 0.15)` }}
+                whileTap={{ scale: 0.95 }}
+                onClick={refreshStatus}
+                style={{
+                  marginTop: '8px',
+                  background: 'rgba(125, 249, 255, 0.08)',
+                  border: '1px solid rgba(125, 249, 255, 0.3)',
+                  borderRadius: '4px',
+                  padding: '6px 14px',
+                  color: colors.cyber,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <motion.span
+                  animate={isLoading ? { rotate: [0, 360] } : {}}
+                  transition={{ duration: 1, repeat: isLoading ? Infinity : 0, ease: 'linear' }}
+                >
+                  ↻
+                </motion.span>
+                Refresh
+              </motion.button>
+            </motion.div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 8px' }}>
               {allTxs.map((tx, index) => (

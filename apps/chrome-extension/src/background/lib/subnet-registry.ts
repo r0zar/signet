@@ -67,6 +67,7 @@ export class SubnetRegistry {
    * Process a transaction request on the appropriate subnet
    */
   public async processTxRequest(txRequest: TransactionRequest, subnetId?: string): Promise<void> {
+    console.log(`Processing transaction request:`, txRequest, subnetId);
     // If subnet is specified, use that specific subnet
     if (subnetId && this.subnets.has(subnetId)) {
       await this.subnets.get(subnetId).processTxRequest(txRequest);

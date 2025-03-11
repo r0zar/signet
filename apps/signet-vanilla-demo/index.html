@@ -1,217 +1,588 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Signet Vanilla Demo</title>
-  <link href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css" rel="stylesheet">
   <style>
+    /* Cyberpunk Theme */
     :root {
-      --primary: #50fa7b;
-      --primary-hover: #3da55a;
-      --primary-focus: rgba(80, 250, 123, 0.25);
-      --primary-inverse: #1a1a1a;
+      /* Colors from theme.ts */
+      --cyber: rgb(125, 249, 255);
+      --cyber-dark: rgb(0, 176, 189);
+      --cyber-light: rgb(165, 253, 255);
+      --neon-pink: rgb(218, 47, 183);
+      --neon-purple: rgb(140, 50, 193);
+      --neon-green: rgb(54, 199, 88);
+      --neon-orange: rgb(255, 149, 0);
+      --neon-red: rgb(255, 59, 48);
+      --space-black: rgb(13, 17, 23);
+      --space-dark: rgb(22, 27, 34);
+      --space-gray: rgb(33, 38, 45);
+      --space-void: rgb(1, 4, 9);
+      --steel: rgb(140, 156, 168);
+      --steel-light: rgb(192, 203, 212);
+
+      /* Gradients & Effects */
+      --glow-shadow: 0 0 10px var(--cyber), 0 0 5px rgba(125, 249, 255, 0.3);
+      --panel-bg: linear-gradient(180deg, var(--space-black) 0%, var(--space-void) 100%);
+      --card-bg: rgba(1, 4, 9, 0.8);
+    }
+
+    /* Animations */
+    @keyframes scanLine {
+      0% {
+        transform: translateY(0%);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: translateY(100%);
+        opacity: 0.1;
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes flicker {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      25% {
+        opacity: 0.9;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      75% {
+        opacity: 0.8;
+      }
+    }
+
+    /* Base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     body {
-      max-width: 640px;
+      background-color: var(--space-void);
+      color: white;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Cyberpunk body effect */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(125, 249, 255, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(218, 47, 183, 0.03) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Scan line effect */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: rgba(125, 249, 255, 0.6);
+      opacity: 0.4;
+      box-shadow: 0 0 10px var(--cyber), 0 0 5px var(--cyber);
+      animation: scanLine 3s linear infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .app-container {
+      max-width: 1440px;
       margin: 0 auto;
       padding: 1rem;
-      background-color: #282a36;
-      color: #f8f8f2;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1.5rem;
+      min-height: calc(100vh - 2rem);
     }
 
-    pre {
-      background-color: #44475a;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
+    header {
+      grid-column: 1 / -1;
+      border-bottom: 1px solid rgba(125, 249, 255, 0.2);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+      color: var(--cyber);
+      position: relative;
+      height: auto;
+      min-height: 3.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    .card {
-      background-color: #1e1f29;
-      border-radius: 0.5rem;
+    header::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100px;
+      height: 2px;
+      background-color: var(--cyber);
+      box-shadow: 0 0 10px var(--cyber), 0 0 5px rgba(125, 249, 255, 0.5);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin: 0 0 0.4rem 0;
+      padding: 0;
+      line-height: 1.2;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    h1::after {
+      content: "v1.0.0";
+      position: relative;
+      top: 0;
+      right: 0;
+      margin-left: 10px;
+      font-size: 0.7rem;
+      color: var(--cyber);
+      opacity: 0.8;
+      border: 1px solid var(--cyber);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    h4 {
+      color: var(--cyber);
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(125, 249, 255, 0.2);
+      padding-bottom: 0.5rem;
+    }
+
+    p {
+      opacity: 0.8;
+      max-width: 600px;
+      margin: 0;
+      padding: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    /* Control panel */
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid rgba(125, 249, 255, 0.15);
+      border-radius: 4px;
       padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+      position: relative;
+      overflow: hidden;
     }
 
+    .control-panel::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyber), transparent);
+      opacity: 0.8;
+    }
+
+    .panel-title {
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: var(--cyber);
+      opacity: 0.9;
+      position: relative;
+      padding-bottom: 0.5rem;
+    }
+
+    /* Status section */
+    #status-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Buttons */
+    .sdk-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    button {
+      background-color: rgba(33, 38, 45, 0.8);
+      color: white;
+      border: 1px solid rgba(125, 249, 255, 0.3);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(125, 249, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    button:hover {
+      background-color: rgba(22, 27, 34, 0.9);
+      border-color: var(--cyber);
+      box-shadow: 0 0 8px rgba(125, 249, 255, 0.3);
+    }
+
+    button:hover::after {
+      left: 100%;
+    }
+
+    button.primary {
+      background-color: rgba(125, 249, 255, 0.15);
+      border-color: var(--cyber);
+      color: var(--cyber);
+    }
+
+    button.primary:hover {
+      background-color: rgba(125, 249, 255, 0.25);
+      box-shadow: 0 0 10px rgba(125, 249, 255, 0.4);
+    }
+
+    /* Badges */
     .badge {
       display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 1rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
       font-size: 0.75rem;
       font-weight: 600;
-      margin-right: 0.5rem;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .badge::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: translateX(-100%);
+      transition: transform 2s;
+    }
+
+    .badge:hover::before {
+      transform: translateX(100%);
     }
 
     .success {
-      background-color: #50fa7b;
-      color: #1a1a1a;
+      background-color: rgba(54, 199, 88, 0.2);
+      color: var(--neon-green);
+      border: 1px solid rgba(54, 199, 88, 0.4);
     }
 
     .error {
-      background-color: #ff5555;
-      color: #ffffff;
+      background-color: rgba(255, 59, 48, 0.2);
+      color: var(--neon-red);
+      border: 1px solid rgba(255, 59, 48, 0.4);
     }
 
     .info {
-      background-color: #8be9fd;
-      color: #1a1a1a;
-    }
-
-    .warning {
-      background-color: #f1fa8c;
-      color: #1a1a1a;
+      background-color: rgba(125, 249, 255, 0.15);
+      color: var(--cyber);
+      border: 1px solid rgba(125, 249, 255, 0.3);
     }
 
     .outline {
       background-color: transparent;
-      border: 1px solid #6272a4;
-      color: #f8f8f2;
+      border: 1px solid rgba(192, 203, 212, 0.3);
+      color: var(--steel-light);
     }
 
-    .tabs {
+    /* Log panel */
+    .log-panel {
+      background: var(--card-bg);
+      border: 1px solid rgba(125, 249, 255, 0.15);
+      border-radius: 4px;
       display: flex;
-      margin-bottom: 1rem;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+      position: relative;
+      overflow: hidden;
     }
 
-    .tab {
-      flex: 1;
-      text-align: center;
-      padding: 0.5rem;
-      border-bottom: 2px solid #44475a;
-      cursor: pointer;
+    .log-panel::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyber), transparent);
+      opacity: 0.8;
     }
 
-    .tab.active {
-      border-bottom: 2px solid var(--primary);
-      font-weight: 600;
+    .log-header {
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(125, 249, 255, 0.1);
     }
 
-    .tab-content {
-      display: none;
+    .log-title {
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: var(--cyber);
+      opacity: 0.9;
     }
 
-    .tab-content.active {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .log-status {
+      font-size: 0.7rem;
+      color: var(--steel);
+      display: flex;
+      align-items: center;
       gap: 0.5rem;
     }
 
-    .response-section {
-      margin-top: 1.5rem;
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--cyber);
+      animation: pulse 2s infinite;
     }
 
-    .code {
-      font-family: monospace;
+    .log-content {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex-grow: 1;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      height: calc(100vh - 8.5rem);
+      max-height: 800px;
+      min-height: 400px;
+    }
+
+    /* Message log styling */
+    #response .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(125, 249, 255, 0.2);
+    }
+
+    #response .log-time {
+      color: var(--steel);
       font-size: 0.8rem;
-      background-color: #44475a;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
     }
 
-    button {
-      background-color: #6272a4;
+    #response .log-type {
+      color: var(--cyber);
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    #response .log-content {
+      padding: 0;
+      height: auto;
+      min-height: auto;
+      max-height: none;
+    }
+
+    #response .log-content pre {
+      background: transparent;
       border: none;
-      color: #f8f8f2;
+      padding: 0;
+      margin: 0;
+      min-height: auto;
+      height: auto;
+      color: var(--steel-light);
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85rem;
     }
 
-    button:hover {
-      background-color: #7b88b9;
+    pre {
+      background-color: rgba(13, 17, 23, 0.6);
+      padding: 1.25rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      color: var(--steel-light);
+      border: 1px solid rgba(125, 249, 255, 0.1);
+      height: 100%;
+      min-height: 300px;
+      position: relative;
+      margin: 0;
+      box-sizing: border-box;
+      font-family: 'Fira Code', 'Roboto Mono', 'Courier New', monospace;
+      tab-size: 2;
     }
 
-    button.primary {
-      background-color: var(--primary);
-      color: var(--primary-inverse);
+    pre::before {
+      content: "JSON";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.7rem;
+      background-color: var(--space-black);
+      padding: 0.1rem 0.5rem;
+      border-radius: 2px;
+      color: var(--cyber);
+      border: 1px solid rgba(125, 249, 255, 0.3);
+      z-index: 1;
     }
 
-    button.primary:hover {
-      background-color: var(--primary-hover);
+    /* Wallet info */
+    #wallet-info {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
     }
 
-    button.destructive {
-      background-color: #ff5555;
-      color: #ffffff;
-    }
-
-    button.destructive:hover {
-      background-color: #e64545;
-    }
-
-    button.outline {
-      background-color: transparent;
-      border: 1px solid #6272a4;
-      color: #f8f8f2;
-    }
-
-    button.outline:hover {
-      background-color: rgba(98, 114, 164, 0.1);
-    }
-
-    button.ghost {
-      background-color: transparent;
-      color: #f8f8f2;
-    }
-
-    button.ghost:hover {
-      background-color: rgba(98, 114, 164, 0.1);
+    @media (max-width: 768px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
-<body>
-  <header>
-    <h1>Signet Vanilla Demo</h1>
-    <p>A demonstration of Signet SDK capabilities without any framework</p>
-  </header>
 
-  <main>
-    <div class="card">
-      <div id="status-section">
-        <span id="extension-status" class="badge error">Extension Not Detected</span>
-        <div id="wallet-info" style="display: none; margin-top: 0.5rem;">
-          <span id="balance-badge" class="badge outline">Balance: 0.00</span>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>Signet SDK Test</h1>
+      <p>Debug environment for testing the Signet SDK communication protocol</p>
+    </header>
+
+    <section class="control-panel">
+      <div>
+        <h4 class="panel-title">Status</h4>
+        <div id="status-section">
+          <span id="extension-status" class="badge error">Extension Not Detected</span>
+          <span id="debug-badge" class="badge info">API Calls: 0</span>
+          <span id="balance-badge" class="badge outline" style="display: none;">Wallet</span>
           <span id="connection-badge" class="badge success" style="display: none;">Connected</span>
         </div>
       </div>
 
-      <div class="tabs">
-        <div class="tab active" data-tab="basic">Basic</div>
-        <div class="tab" data-tab="enhanced">Enhanced</div>
-      </div>
-
-      <div class="tab-content active" id="basic-tab">
-        <button id="system-notification">System Message</button>
-        <button id="error-notification" class="destructive">Error Message</button>
-        <button id="transaction-notification" class="outline">Transaction</button>
-        <button id="prediction-market">Prediction</button>
-        <button id="show-3d" class="ghost">Show 3D Cube</button>
-        <button id="toggle-extension" class="outline">Toggle Extension</button>
-      </div>
-
-      <div class="tab-content" id="enhanced-tab">
-        <button id="rich-notification">Rich Notification</button>
-        <button id="transfer-tokens" class="outline">Transfer Tokens</button>
-        <button id="get-wallet-info" class="ghost">Get Wallet Info</button>
-        <button id="set-ui-options" class="outline">Set UI Theme</button>
-      </div>
-
-      <div id="tx-result" class="response-section" style="display: none;">
-        <h4>Transaction Result:</h4>
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-          <span id="tx-status" class="badge outline">pending</span>
-          <code id="tx-id" class="code">tx-0000000000</code>
+      <div>
+        <h4 class="panel-title">Basic Operations</h4>
+        <div class="sdk-actions">
+          <button id="check-extension" class="primary">Check Extension</button>
+          <button id="get-status" class="primary">Get Status</button>
         </div>
       </div>
 
-      <div id="response-container" class="response-section" style="display: none;">
-        <h4>Last Response:</h4>
-        <pre id="response"></pre>
+      <div id="subnet-actions">
+        <h4 class="panel-title">Subnet Operations</h4>
+        <div class="sdk-actions">
+          <button id="get-balance">Get Balance</button>
+          <button id="get-all-balances">Get All Balances</button>
+        </div>
       </div>
-    </div>
-  </main>
+
+      <div id="transfer-actions">
+        <h4 class="panel-title">Transfer Operations</h4>
+        <div class="sdk-actions">
+          <button id="create-transfer">Create Transfer</button>
+          <div class="transfer-form" style="display: none; margin-top: 10px;">
+            <div style="margin-bottom: 8px;">
+              <input type="text" id="transfer-to" placeholder="To address"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <input type="number" id="transfer-amount" placeholder="Amount"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px;">
+            </div>
+            <button id="submit-transfer" class="primary">Send Transfer</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="log-panel">
+      <div class="log-header">
+        <div class="log-title">Message Log</div>
+        <div class="log-status">
+          <div class="status-dot"></div>
+          <span>LIVE</span>
+        </div>
+      </div>
+      <div class="log-content">
+        <div id="response-container" style="height: 100%;">
+          <pre id="response">
+<div class="log-header">
+  <div class="log-time">Starting up...</div>
+  <div class="log-type">Application Init</div>
+</div>
+<div class="log-content">
+  <pre style="color: var(--steel);">// Waiting for messages...
+// Click one of the buttons to test the Signet extension connectivity</pre>
+        </div>
+        </pre>
+      </div>
+  </div>
+  </section>
+  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
+
 </html>

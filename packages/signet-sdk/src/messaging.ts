@@ -4,24 +4,61 @@
  * between applications and the Signet extension
  */
 
-// Core message interface
-export interface Message {
+/**
+ * Enum of supported message types
+ * Starting with the basic status/discovery messages
+ */
+export enum MessageType {
+  // Status and discovery operations
+  CHECK_EXTENSION_INSTALLED = 'check_extension_installed',
+  GET_STATUS = 'get_status',
+  
+  // System operations (for compatibility)
+  LOG = 'log',
+  ERROR = 'error',
+  
+  // Subnet operations
+  GET_BALANCE = 'get_balance',
+  GET_BALANCES = 'get_balances',
+  MINE_BLOCK = 'mine_block',
+  MINE_ALL_PENDING_BLOCKS = 'mine_all_pending_blocks',
+  
+  // Transaction operations
+  CREATE_TRANSFER_TX = 'create_transfer_tx'
+}
+
+/**
+ * Core message interface with improved typing
+ */
+export interface Message<T = unknown> {
   id: string
   timestamp: string
-  // Message classification
-  type: string
-  // General purpose data payload
-  data: { [key: string]: any }
-  // Flag to indicate if this message expects a response
+  
+  // Message classification using enum
+  type: MessageType
+  
+  // Origin for security
+  origin?: string
+  
+  // Type-safe data payload
+  data: T
+  
+  // Request/response handling
   request?: boolean
-  // Flag to link response messages to their requests
   response?: string
+  
+  // Error handling
+  error?: {
+    code: string
+    message: string
+    details?: unknown
+  }
 }
 
 // Internal state
-const listeners: Array<(message: Message) => void> = []
+const listeners: Array<(message: Message<any>) => void> = []
 const pendingResponses: Map<string, {
-  resolve: (response: Message) => void
+  resolve: (response: Message<any>) => void
   reject: (error: Error) => void
   timeoutId: NodeJS.Timeout
 }> = new Map()
@@ -35,18 +72,17 @@ setupListener()
 function handleIncomingMessage(event: MessageEvent): void {
   // Check if this is a valid Signet message
   if (!isValidMessage(event.data)) {
-    console.error('Invalid message received:', event.data)
     return
   }
 
-  const message = event.data as Message
+  const message = event.data as Message<unknown>
 
   // Check if this is a response to a pending request
   if (message.response && pendingResponses.has(message.response)) {
     const { resolve, timeoutId } = pendingResponses.get(message.response)!
 
-    // Clear the timeout and resolve the promise
-    clearTimeout(timeoutId)
+    // Clear the timeout (if it exists) and resolve the promise
+    if (timeoutId) clearTimeout(timeoutId)
     resolve(message)
 
     // Remove from pending responses
@@ -81,7 +117,7 @@ export function cleanup(): void {
 
   // Clear any pending response promises
   pendingResponses.forEach(({ reject, timeoutId }) => {
-    clearTimeout(timeoutId)
+    if (timeoutId) clearTimeout(timeoutId)
     reject(new Error('Messaging system shut down'))
   })
 
@@ -92,13 +128,13 @@ export function cleanup(): void {
 /**
  * Prepare a message for sending
  */
-function prepareMessage(message: Partial<Message>): Message {
+function prepareMessage<T>(message: Partial<Message<T>> & { type: MessageType }): Message<T> {
   return {
-    data: {},
-    type: 'log',
+    data: {} as T,
     ...message,
     id: message.id || (crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}-${Math.random()}`),
     timestamp: message.timestamp || new Date().toISOString(),
+    origin: message.origin || window.location.origin
   }
 }
 
@@ -119,7 +155,7 @@ function isValidMessage(msg: any): boolean {
 /**
  * Send a message without expecting a response
  */
-export function send(message: Partial<Message>): Message {
+export function send<T>(message: Partial<Message<T>> & { type: MessageType }): Message<T> {
   const finalMessage = prepareMessage(message)
   window.postMessage(finalMessage, '*')
   return finalMessage
@@ -128,21 +164,32 @@ export function send(message: Partial<Message>): Message {
 /**
  * Send a message and wait for a response
  */
-export async function request(message: Partial<Message>, timeoutMs = 5000): Promise<Message> {
-  const finalMessage = prepareMessage({
+export async function request<TRequest, TResponse = unknown>(
+  message: Partial<Message<TRequest>> & { type: MessageType }, 
+  timeoutMs = 5000
+): Promise<Message<TResponse>> {
+  const finalMessage = prepareMessage<TRequest>({
     ...message,
     request: true
   })
 
-  const responsePromise = new Promise<Message>((resolve, reject) => {
-    // Set up timeout to reject the promise if no response is received
-    const timeoutId = setTimeout(() => {
-      pendingResponses.delete(finalMessage.id)
-      reject(new Error(`No response received within ${timeoutMs}ms`))
-    }, timeoutMs)
+  const responsePromise = new Promise<Message<TResponse>>((resolve, reject) => {
+    // Set up timeout to reject the promise if no response is received (unless timeoutMs is 0)
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    if (timeoutMs > 0) {
+      timeoutId = setTimeout(() => {
+        pendingResponses.delete(finalMessage.id)
+        reject(new Error(`No response received within ${timeoutMs}ms`))
+      }, timeoutMs);
+    }
 
     // Store promise resolution functions and timeout ID
-    pendingResponses.set(finalMessage.id, { resolve, reject, timeoutId })
+    pendingResponses.set(finalMessage.id, { 
+      resolve: resolve as any, 
+      reject, 
+      timeoutId: timeoutId as any // Cast needed for compatibility with existing type 
+    })
   })
 
   // Send the message
@@ -155,10 +202,16 @@ export async function request(message: Partial<Message>, timeoutMs = 5000): Prom
 /**
  * Send a response to a message
  */
-export function respond(originalMessage: Message, data?: any): Message {
-  const responseMessage = prepareMessage({
-    data: data || {},
-    response: originalMessage.id
+export function respond<T>(
+  originalMessage: Message<any>, 
+  data?: T,
+  error?: { code: string; message: string; details?: unknown }
+): Message<T> {
+  const responseMessage = prepareMessage<T>({
+    data: data as any || ({} as any),
+    response: originalMessage.id,
+    type: originalMessage.type as any,
+    error
   })
 
   window.postMessage(responseMessage, '*')
@@ -169,12 +222,29 @@ export function respond(originalMessage: Message, data?: any): Message {
  * Subscribe to messages
  * Returns an unsubscribe function
  */
-export function subscribe(callback: (message: Message) => void): () => void {
-  listeners.push(callback)
+export function subscribe<T = unknown>(
+  callback: (message: Message<T>) => void,
+  filter?: { type?: MessageType | MessageType[] }
+): () => void {
+  // Create a wrapper that applies filters
+  const wrappedCallback = (message: Message<any>) => {
+    // Apply type filtering if specified
+    if (filter?.type) {
+      if (Array.isArray(filter.type)) {
+        if (!filter.type.includes(message.type)) return;
+      } else if (message.type !== filter.type) {
+        return;
+      }
+    }
+    
+    callback(message as Message<T>);
+  };
+
+  listeners.push(wrappedCallback)
 
   // Return unsubscribe function
   return () => {
-    const index = listeners.indexOf(callback)
+    const index = listeners.indexOf(wrappedCallback)
     if (index !== -1) {
       listeners.splice(index, 1)
     }

@@ -1,9 +1,9 @@
 // Define types for operations
 export type MessageAction =
-  // Subnet operations
   | "getStatus"
   | "getBalance"
   | "getBalances"
+  | "getAssetBalances"
   | "processTx"
   | "createTransferTx"
   | "createPredictionTx"
@@ -13,7 +13,6 @@ export type MessageAction =
   | "refreshBalances"
   | "mineBlock"
   | "mineAllPendingBlocks"
-  | "generateSignature"
   | "setSigner"
   // Wallet related actions
   | "initializeWallet"

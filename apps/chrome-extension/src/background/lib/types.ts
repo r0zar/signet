@@ -30,14 +30,13 @@ export interface TxRequest {
 export interface TransactionRequest {
     type: TransactionType;
     signature: string;
-    signer: string;
+    signer?: string;
     nonce: number;
 }
 
 export interface Transfer extends TransactionRequest {
     type: TransactionType.TRANSFER;
     signature: string;
-    signer: string;
     to: string;
     amount: number;
     nonce: number;
@@ -46,7 +45,6 @@ export interface Transfer extends TransactionRequest {
 export interface Prediction extends TransactionRequest {
     type: TransactionType.PREDICT;
     signature: string;
-    signer: string;
     marketId: number;
     outcomeId: number;
     amount: number;
@@ -56,7 +54,6 @@ export interface Prediction extends TransactionRequest {
 export interface ClaimReward extends TransactionRequest {
     type: TransactionType.CLAIM_REWARD;
     signature: string;
-    signer: string;
     receiptId: number;
     nonce: number;
 }

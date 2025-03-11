@@ -15,6 +15,7 @@ import { LogsTab } from './tabs/LogsTab';
 import { WalletTab } from './tabs/WalletTab';
 import { TransferTab } from './tabs/TransferTab';
 import { MempoolTab } from './tabs/MempoolTab';
+import { PermissionsTab } from './tabs/PermissionsTab';
 
 // Import the Status interface
 interface Status {
@@ -168,12 +169,12 @@ function MinimizedButton({
 }
 
 export function ControlPanel({ onClose }: { onClose: () => void }) {
-  // Active tab state (0-3 for the 4 tabs)
+  // Active tab state (0-4 for the 5 tabs)
   const [activeTab, setActiveTab] = useState(1);
   const { status, error, refreshStatus, isWalletInitialized } = useSignetContext();
 
   // Tab titles for the navigation bar
-  const tabTitles = ['LOGS', 'WALLET', 'TRANSFER', 'MEMPOOL'];
+  const tabTitles = ['LOGS', 'WALLET', 'TRANSFER', 'MEMPOOL', 'PERMISSIONS'];
 
   // Effect to check status on load
   useEffect(() => {
@@ -182,12 +183,12 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
 
   // Navigate to previous tab
   const goToPreviousTab = () => {
-    setActiveTab(prev => (prev === 0 ? 3 : prev - 1));
+    setActiveTab(prev => (prev === 0 ? 4 : prev - 1));
   }
 
   // Navigate to next tab
   const goToNextTab = () => {
-    setActiveTab(prev => (prev === 3 ? 0 : prev + 1));
+    setActiveTab(prev => (prev === 4 ? 0 : prev + 1));
   }
 
   // Render tab content based on active tab
@@ -201,6 +202,8 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
         return <TransferTab />;
       case 3: // Mempool tab
         return <MempoolTab />;
+      case 4: // Permissions tab
+        return <PermissionsTab />;
       default:
         return null;
     }

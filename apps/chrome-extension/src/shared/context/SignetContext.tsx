@@ -11,8 +11,13 @@ import type { Account, SeedPhrase, Status } from './types'
 const defaultContext: SignetContextType = {
   // Messages state
   messages: [],
+  pendingPermissions: [],
   clearMessages: () => { },
   addMessage: () => { },
+  handleSDKMessage: () => { },
+  approvePermission: () => { },
+  denyPermission: () => { },
+  rememberPermission: () => { },
 
   // Subnet state
   status: null,
@@ -30,7 +35,6 @@ const defaultContext: SignetContextType = {
   mineAllPendingBlocks: async () => { throw new Error("Context not initialized") },
   refreshBalances: async () => { throw new Error("Context not initialized") },
   setSigner: async () => { throw new Error("Context not initialized") },
-  generateSignature: async () => { throw new Error("Context not initialized") },
   refreshStatus: async () => { throw new Error("Context not initialized") },
 
   // Transaction operations
@@ -69,8 +73,9 @@ interface SignetProviderProps {
 
 // The actual provider component
 export function SignetProvider({ children }: SignetProviderProps) {
-  // Initialize message slice 
-  const messagesSlice = useMessagesSlice();
+  // Initialize subnet slice with the wallet's current account address as initial signer
+  const subnetSlice = useSubnetSlice();
+
 
   // Use the Wallet slice with a callback to update the subnet slice's signer
   const walletSlice = useWalletSlice((account: Account | null) => {
@@ -81,26 +86,29 @@ export function SignetProvider({ children }: SignetProviderProps) {
     }
   });
 
-  // Initialize subnet slice with the wallet's current account address as initial signer
-  const subnetSlice = useSubnetSlice();
-
   // Initialize transaction slice (depends on signer from subnet slice)
   const transactionSlice = useTransactionSlice(subnetSlice.signer);
 
+  // Initialize message slice with subnet slice for status refresh
+  const messagesSlice = useMessagesSlice(subnetSlice, transactionSlice);
+
   // Setup message subscriber
   useEffect(() => {
-    // Subscribe to all messages
-    const unsubscribe = setupMessageSubscriber(messagesSlice.addMessage);
+    // Subscribe to all messages and handle SDK messages
+    const unsubscribe = setupMessageSubscriber(
+      messagesSlice.addMessage,
+      messagesSlice.handleSDKMessage
+    );
 
     // Cleanup on unmount
     return unsubscribe;
-  }, [messagesSlice.addMessage]);
+  }, []);
 
   // Get initial status and wallet state
   useEffect(() => {
     subnetSlice.refreshStatus();
     walletSlice.checkWalletInitialization();
-  }, [subnetSlice.refreshStatus, walletSlice.checkWalletInitialization]);
+  }, []);
 
   // Create context value by merging all slices
   const contextValue: SignetContextType = {

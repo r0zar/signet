@@ -12,39 +12,7 @@ import type {
 // Import wallet functionality
 import * as wallet from "../lib/wallet"
 import type { SeedPhrase, Account, CreateAccountOptions } from "../lib/wallet/types"
-
-export type MessageAction =
-  | "getStatus"
-  | "getBalance"
-  | "getBalances"
-  | "getAssetBalances"
-  | "processTx"
-  | "createTransferTx"
-  | "createPredictionTx"
-  | "createClaimRewardTx"
-  | "deposit"
-  | "withdraw"
-  | "refreshBalances"
-  | "mineBlock"
-  | "mineAllPendingBlocks"
-  | "generateSignature"
-  | "setSigner"
-  // Wallet related actions
-  | "initializeWallet"
-  | "checkWalletInitialized"
-  | "createSeedPhrase"
-  | "importSeedPhrase"
-  | "getAllSeedPhrases"
-  | "getSeedPhraseById"
-  | "deleteSeedPhrase"
-  | "createAccount"
-  | "getAccount"
-  | "getAllAccounts"
-  | "getAccountsForSeedPhrase"
-  | "activateAccount"
-  | "getCurrentAccount"
-  | "deleteAccount"
-  | "resetWallet";
+import type { MessageAction } from "~shared/context/types"
 
 interface MessageRequest {
   action: MessageAction;
@@ -246,14 +214,14 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
 
       case "createTransferTx":
         // Validate input data
-        if (!data?.to || typeof data.amount !== "number" || !data?.signer || typeof data.nonce !== "number") {
+        if (!data?.to || typeof data.amount !== "number" || typeof data.nonce !== "number") {
           throw new Error("Invalid transfer data");
         }
 
         // Determine which subnet to use
         const subnetId = data.subnet || assets[0].subnet; // Default to first asset's subnet if not specified
 
-        // Generate signature using the specified subnet
+        // Sign the transfer using the specified subnet
         const transferSignature = await subnetRegistry.generateSignature({
           to: data.to,
           amount: data.amount,
@@ -264,11 +232,12 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         const transferTx: Transfer = {
           type: TransactionType.TRANSFER,
           signature: transferSignature,
-          signer: data.signer,
           to: data.to,
           amount: data.amount,
           nonce: data.nonce
         };
+
+        console.log(transferTx)
 
         // Process it on the appropriate subnet
         await subnetRegistry.processTxRequest(transferTx, subnetId);
@@ -294,7 +263,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
           throw new Error("Predictions subnet not found");
         }
 
-        // Generate signature using the predictions subnet
+        // Sign the prediction using the predictions subnet
         const predictionSignature = await subnetRegistry.generateSignature({
           to: predictionsSubnetId, // Use predictions subnet as target
           amount: data.amount,
@@ -305,7 +274,6 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         const predictionTx: Prediction = {
           type: TransactionType.PREDICT,
           signature: predictionSignature,
-          signer: data.signer,
           marketId: data.marketId,
           outcomeId: data.outcomeId,
           amount: data.amount,
@@ -339,17 +307,12 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         };
 
         // Use subnet registry to generate signature
-        const claimSignature = await subnetRegistry.generateSignature({
-          to: claimSubnetId, // Use predictions subnet as target
-          amount: 0, // We're not transferring tokens, but reusing signature
-          nonce: data.nonce
-        }, claimSubnetId);
+        const claimSignature = await subnetRegistry.generateSignature(message, claimSubnetId);
 
         // Create claim reward transaction
         const claimTx: ClaimReward = {
           type: TransactionType.CLAIM_REWARD,
           signature: claimSignature,
-          signer: data.signer,
           receiptId: data.receiptId,
           nonce: data.nonce
         };
@@ -402,21 +365,6 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
       case "mineAllPendingBlocks":
         // Mine all pending transactions across all subnets
         response = await subnetRegistry.mineAllPendingBlocks(data?.batchSize);
-        break;
-
-      case "generateSignature":
-        if (!data?.to || typeof data?.amount !== "number" || typeof data?.nonce !== "number") {
-          throw new Error("Invalid signature request data");
-        }
-
-        // Determine which subnet to use, defaulting to the first asset if not specified
-        const sigSubnetId = data.subnetId || assets[0].subnet;
-
-        response = await subnetRegistry.generateSignature({
-          to: data.to,
-          amount: data.amount,
-          nonce: data.nonce
-        }, sigSubnetId);
         break;
 
       default:

@@ -72,7 +72,7 @@ export default function NotificationPanel({
           y: isHovering ? [0, 0] : [0, -5, 0]
         }}
         style={{
-          width: '300px',
+          width: '400px',
           borderRadius: '6px',
           overflow: 'hidden',
           transformStyle: 'preserve-3d',
@@ -241,22 +241,37 @@ export default function NotificationPanel({
                 alignItems: 'center',
                 gap: '6px'
               }}>
-                <motion.div
-                  animate={{
-                    boxShadow: [
-                      `0 0 2px ${color}aa`,
-                      `0 0 8px ${color}dd`,
-                      `0 0 2px ${color}aa`
-                    ]
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: color
-                  }}
-                />
+                {notification.customIcon ? (
+                  <div
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+
+                  >
+                    {notification.customIcon}
+                  </div>
+                ) : (
+                  <motion.div
+                    animate={{
+                      boxShadow: [
+                        `0 0 2px ${color}aa`,
+                        `0 0 8px ${color}dd`,
+                        `0 0 2px ${color}aa`
+                      ]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: color
+                    }}
+                  />
+                )}
                 <div style={{
                   fontFamily: 'monospace',
                   fontWeight: 'bold',
@@ -346,7 +361,10 @@ export default function NotificationPanel({
                   </div>
                 )}
 
-                {/* HTML content if provided, otherwise plain message */}
+                {/* Handle content based on its type:
+                    - htmlContent: render as HTML
+                    - message: render as React component or string
+                    - otherwise: undefined or empty */}
                 {notification.htmlContent ? (
                   <div
                     dangerouslySetInnerHTML={{ __html: notification.htmlContent }}
@@ -356,7 +374,13 @@ export default function NotificationPanel({
                     }}
                   />
                 ) : (
-                  notification.message
+                  <div style={{
+                    maxWidth: '100%',
+                    wordBreak: 'break-word',
+                    textAlign: 'left'
+                  }}>
+                    {notification.message}
+                  </div>
                 )}
 
                 {notification.details && (
