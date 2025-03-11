@@ -10,7 +10,7 @@ interface Notification3DProps {
 /**
  * Animated 3D cube notification display
  */
-export default function Notification3D({
+export default function NotificationCube({
   color = colors.cyber,
   label = 'SIGNET NOTIFICATION',
   onClose

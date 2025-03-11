@@ -1,11 +1,10 @@
 /**
- * Main content script for injecting the SignetController into web pages
+ * Main content script for injecting the SignetApp into web pages
  */
 import type { PlasmoCSConfig } from "plasmo"
-import { SignetProvider } from '../shared/hooks/useSignet'
-import { SignetController } from './controller/Controller'
 import '../shared/styles/form-elements.css'
-
+import { SignetProvider } from "~shared/context/SignetContext"
+import { SignetController } from "./components/SignetController"
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   all_frames: true
@@ -13,7 +12,7 @@ export const config: PlasmoCSConfig = {
 
 /**
  * Main overlay component for the Chrome extension
- * We wrap SignetController in a div with specific styles to ensure
+ * We wrap SignetApp in a div with specific styles to ensure
  * no styles leak to webpage even without Shadow DOM
  */
 const PlasmoOverlay = () => {

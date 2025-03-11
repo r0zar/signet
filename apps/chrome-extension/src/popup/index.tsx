@@ -3,7 +3,6 @@
  * Now uses the centralized useSignet hook for state management
  */
 import { keyframes } from "../shared/styles/theme"
-import { SignetProvider } from "../shared/hooks/useSignet"
 import "../shared/styles/style.css"
 
 // Import components
@@ -11,8 +10,9 @@ import { StatusDisplay } from "./components/StatusDisplay"
 import { HologramDisplay } from "./components/HologramDisplay"
 import { ConsoleView } from "./components/ConsoleView"
 import { SystemMetrics } from "./components/SystemMetrics"
+import { SignetProvider } from "~shared/context/SignetContext"
 
-// Wrapped popup component with provider
+// Wrapped popup component with providers
 const PopupWithProvider = () => (
   <SignetProvider>
     <IndexPopup />
@@ -38,7 +38,7 @@ function IndexPopup() {
         color: '#fff',
         fontFamily: 'Inter, system-ui, sans-serif',
         position: 'relative',
-        boxShadow: '0 0 20px rgba(0, 0, 0, 0.8), 0 0 5px rgba(125, 249, 255, 0.5)'
+        boxShadow: '0 0 20px rgba(0, 0, 0, 0.8), 0 0 5px rgba(125, 249, 255, 0.5)',
       }}
     >
       {/* Top status bar */}
@@ -47,8 +47,8 @@ function IndexPopup() {
       {/* Main interface section */}
       <div style={{
         position: 'relative',
-        padding: '16px',
-        height: 'calc(100% - 100px)', // Account for top and bottom bars
+        padding: '0px',
+        height: 'calc(100% - 80px)', // Account for top and bottom bars
         overflow: 'hidden'
       }}>
         {/* Background grid lines */}

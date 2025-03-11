@@ -1,10 +1,9 @@
 import { motion } from 'framer-motion'
-import type { NotificationData } from '../types/signet'
 import { use3DEffect } from '~shared/hooks/use3DEffect'
 import { colors } from '~shared/styles/theme'
 
 interface NotificationPanelProps {
-  notification: NotificationData
+  notification: any
   isExiting?: boolean
   onDismiss: () => void
   onApprove?: () => void

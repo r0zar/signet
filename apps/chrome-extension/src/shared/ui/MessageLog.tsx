@@ -1,9 +1,28 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { colors } from '~shared/styles/theme'
+import { colors } from '../styles/theme'
+import type { Message } from 'signet-sdk/src/messaging';
+
+// Helper function to format message content
+const formatMessage = (msg: Message): string => {
+  // Extract sender and action from data if available
+  return `[${msg.type}] ${msg.data.text}`;
+}
+
+// Helper function to get color based on message level
+const getMessageColor = (msg: any): string => {
+  if (!msg.type) return colors.white;
+
+  switch (msg.type) {
+    case 'debug':
+      return colors.steel;
+    default:
+      return colors.white;
+  }
+}
 
 interface MessageLogProps {
-  messages: string[]
+  messages: any[]
   maxHeight?: number
   expanded?: boolean
   onToggleExpand?: (expanded: boolean) => void
@@ -92,11 +111,11 @@ export default function MessageLog({
         ) : (
           messages.map((msg, index) => (
             <div
-              key={index}
+              key={msg.id || index}
               style={{
                 padding: '3px 0',
                 borderBottom: index === messages.length - 1 ? 'none' : `1px solid rgba(140, 156, 168, 0.1)`,
-                color: colors.white,
+                color: getMessageColor(msg),
                 fontFamily: 'monospace',
                 fontSize: '10px',
                 whiteSpace: isExpanded ? 'normal' : 'nowrap',
@@ -104,14 +123,14 @@ export default function MessageLog({
                 textOverflow: isExpanded ? 'clip' : 'ellipsis'
               }}
             >
-              {msg}
+              {formatMessage(msg)}
             </div>
           ))
         )}
       </motion.div>
 
       {/* Expand/collapse toggle button */}
-      <motion.div
+      {/* <motion.div
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={handleToggle}
@@ -134,7 +153,7 @@ export default function MessageLog({
         }}
       >
         {isExpanded ? '▲' : '▼'}
-      </motion.div>
+      </motion.div> */}
     </div>
   )
 }
