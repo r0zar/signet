@@ -69,7 +69,6 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         break;
 
       case "getBalance":
-        console.log({ data })
         response = await subnetRegistry.getBalance(data?.address);
         break;
 

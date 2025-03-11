@@ -82,6 +82,7 @@ export class Subnet {
                 network: STACKS_MAINNET,
                 senderAddress: user
             });
+            console.log(result)
             const balance = result.type === ClarityType.UInt ? Number(result.value) : 0;
 
             // Store the confirmed balance in our Map

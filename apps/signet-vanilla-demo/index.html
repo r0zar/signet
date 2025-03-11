@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signet Vanilla Demo</title>
+  <link href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #50fa7b;
+      --primary-hover: #3da55a;
+      --primary-focus: rgba(80, 250, 123, 0.25);
+      --primary-inverse: #1a1a1a;
+    }
+
+    body {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 1rem;
+      background-color: #282a36;
+      color: #f8f8f2;
+    }
+
+    pre {
+      background-color: #44475a;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .card {
+      background-color: #1e1f29;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+
+    .success {
+      background-color: #50fa7b;
+      color: #1a1a1a;
+    }
+
+    .error {
+      background-color: #ff5555;
+      color: #ffffff;
+    }
+
+    .info {
+      background-color: #8be9fd;
+      color: #1a1a1a;
+    }
+
+    .warning {
+      background-color: #f1fa8c;
+      color: #1a1a1a;
+    }
+
+    .outline {
+      background-color: transparent;
+      border: 1px solid #6272a4;
+      color: #f8f8f2;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      border-bottom: 2px solid #44475a;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      border-bottom: 2px solid var(--primary);
+      font-weight: 600;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .response-section {
+      margin-top: 1.5rem;
+    }
+
+    .code {
+      font-family: monospace;
+      font-size: 0.8rem;
+      background-color: #44475a;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+
+    button {
+      background-color: #6272a4;
+      border: none;
+      color: #f8f8f2;
+    }
+
+    button:hover {
+      background-color: #7b88b9;
+    }
+
+    button.primary {
+      background-color: var(--primary);
+      color: var(--primary-inverse);
+    }
+
+    button.primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button.destructive {
+      background-color: #ff5555;
+      color: #ffffff;
+    }
+
+    button.destructive:hover {
+      background-color: #e64545;
+    }
+
+    button.outline {
+      background-color: transparent;
+      border: 1px solid #6272a4;
+      color: #f8f8f2;
+    }
+
+    button.outline:hover {
+      background-color: rgba(98, 114, 164, 0.1);
+    }
+
+    button.ghost {
+      background-color: transparent;
+      color: #f8f8f2;
+    }
+
+    button.ghost:hover {
+      background-color: rgba(98, 114, 164, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Signet Vanilla Demo</h1>
+    <p>A demonstration of Signet SDK capabilities without any framework</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <div id="status-section">
+        <span id="extension-status" class="badge error">Extension Not Detected</span>
+        <div id="wallet-info" style="display: none; margin-top: 0.5rem;">
+          <span id="balance-badge" class="badge outline">Balance: 0.00</span>
+          <span id="connection-badge" class="badge success" style="display: none;">Connected</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="basic">Basic</div>
+        <div class="tab" data-tab="enhanced">Enhanced</div>
+      </div>
+
+      <div class="tab-content active" id="basic-tab">
+        <button id="system-notification">System Message</button>
+        <button id="error-notification" class="destructive">Error Message</button>
+        <button id="transaction-notification" class="outline">Transaction</button>
+        <button id="prediction-market">Prediction</button>
+        <button id="show-3d" class="ghost">Show 3D Cube</button>
+        <button id="toggle-extension" class="outline">Toggle Extension</button>
+      </div>
+
+      <div class="tab-content" id="enhanced-tab">
+        <button id="rich-notification">Rich Notification</button>
+        <button id="transfer-tokens" class="outline">Transfer Tokens</button>
+        <button id="get-wallet-info" class="ghost">Get Wallet Info</button>
+        <button id="set-ui-options" class="outline">Set UI Theme</button>
+      </div>
+
+      <div id="tx-result" class="response-section" style="display: none;">
+        <h4>Transaction Result:</h4>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+          <span id="tx-status" class="badge outline">pending</span>
+          <code id="tx-id" class="code">tx-0000000000</code>
+        </div>
+      </div>
+
+      <div id="response-container" class="response-section" style="display: none;">
+        <h4>Last Response:</h4>
+        <pre id="response"></pre>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

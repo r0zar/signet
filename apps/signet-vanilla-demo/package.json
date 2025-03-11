@@ -1,0 +1,17 @@
+{
+  "name": "signet-vanilla-demo",
+  "version": "1.0.0",
+  "description": "A vanilla JavaScript demo for the Signet SDK",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "signet-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

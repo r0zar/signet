@@ -1,15 +1,20 @@
 /**
  * SignetController - Main entry point for the Signet extension UI
+ * Responsible for the main control panel and its minimized state
  * Uses the SignetContext for state management and real-time blockchain interactions
  */
 
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import MessageLog from '~shared/ui/MessageLog';
+import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes, colors } from '../../shared/styles/theme'
-import PanelHeader from '~shared/ui/PanelHeader';
 import { useSignetContext } from '~shared/context/SignetContext';
-import NotificationPanel from '~shared/notifications/NotificationPanel';
+import PanelHeader from '~shared/ui/PanelHeader';
+
+// Import tab components
+import { LogsTab } from './tabs/LogsTab';
+import { WalletTab } from './tabs/WalletTab';
+import { TransferTab } from './tabs/TransferTab';
+import { MempoolTab } from './tabs/MempoolTab';
 
 // Import the Status interface
 interface Status {
@@ -17,12 +22,6 @@ interface Status {
   txQueue: any[];
   lastProcessedBlock?: number;
 }
-
-// Import tab components
-import { LogsTab } from './tabs/LogsTab';
-import { WalletTab } from './tabs/WalletTab';
-import { TransferTab } from './tabs/TransferTab';
-import { MempoolTab } from './tabs/MempoolTab';
 
 /**
  * Helper function to count the total number of pending transactions across all subnets
@@ -41,24 +40,8 @@ function countPendingTx(status: Record<string, Status> | null): number {
  */
 export function SignetController() {
   // Get state and actions from context
-  const { messages, status, error } = useSignetContext();
+  const { status, error } = useSignetContext();
   const [visible, setVisible] = useState(false);
-  const [notification, setNotification] = useState(null);
-
-  // Show notifications when new transactions are processed
-  useEffect(() => {
-    if (messages && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
-      if (latestMessage && !notification) {
-        setNotification(latestMessage);
-
-        // Auto-dismiss notification after 5 seconds
-        setTimeout(() => {
-          setNotification(null);
-        }, 5000);
-      }
-    }
-  }, [messages]);
 
   // Show controller when an error occurs
   useEffect(() => {
@@ -83,16 +66,6 @@ export function SignetController() {
 
   return (
     <div className="signet-container" style={{ pointerEvents: 'none' }}>
-      {/* Notification Panel */}
-      <AnimatePresence>
-        {notification && (
-          <NotificationPanel
-            notification={notification}
-            onDismiss={() => setNotification(null)}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Main Controller UI */}
       {visible ? (
         <ControlPanel onClose={() => setVisible(false)} />

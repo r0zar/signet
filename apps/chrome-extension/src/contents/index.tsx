@@ -5,6 +5,8 @@ import type { PlasmoCSConfig } from "plasmo"
 import '../shared/styles/form-elements.css'
 import { SignetProvider } from "~shared/context/SignetContext"
 import { SignetController } from "./components/SignetController"
+import { Notifications } from "./components/Notifications"
+
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   all_frames: true
@@ -32,7 +34,9 @@ const PlasmoOverlay = () => {
       backgroundColor: 'transparent'
     }}>
       <SignetProvider>
+        {/* The controller and notifications are separate components that share the same context */}
         <SignetController />
+        <Notifications />
       </SignetProvider>
     </div>
   )

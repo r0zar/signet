@@ -11,10 +11,10 @@ import { NftTransferPanel } from './NftTransferPanel';
 export function TransferTab() {
   const { signer } = useSignetContext();
   const [activeTab, setActiveTab] = useState<'tokens' | 'nfts'>('tokens');
-  
+
   // Skip NFTs balance check when tab initially loads
   const [hasLoadedNFTs, setHasLoadedNFTs] = useState(false);
-  
+
   // Only set NFTs as loaded after first explicit navigation to NFT tab
   useEffect(() => {
     if (activeTab === 'nfts' && !hasLoadedNFTs) {
@@ -54,7 +54,7 @@ export function TransferTab() {
       ) : (
         <>
           {/* Tab navigation */}
-          <div style={{
+          {/* <div style={{
             display: 'flex',
             borderBottom: '1px solid rgba(125, 249, 255, 0.2)',
             marginBottom: '16px'
@@ -71,8 +71,8 @@ export function TransferTab() {
             >
               NFTs
             </button>
-          </div>
-          
+          </div> */}
+
           {/* Tab content */}
           {activeTab === 'tokens' ? (
             <TokenTransferPanel />
