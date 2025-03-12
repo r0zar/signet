@@ -12,46 +12,46 @@ export function StatusDisplay() {
   // Get state from the context
   const { status, error, isLoading, refreshStatus } = useSignetContext();
   const [timestamp, setTimestamp] = useState(new Date().toISOString());
-  
+
   // Auto-refresh status and timestamp
   useEffect(() => {
     const refreshTimer = setInterval(() => {
       refreshStatus().catch(console.error);
       setTimestamp(new Date().toISOString());
     }, 5000);
-    
+
     return () => clearInterval(refreshTimer);
   }, [refreshStatus]);
-  
+
   // Helper function to count all pending transactions
   const countPendingTx = () => {
     if (!status) return 0;
     return Object.values(status).reduce(
-      (total, subnetStatus) => total + (subnetStatus.txQueue?.length || 0), 
+      (total, subnetStatus) => total + (subnetStatus.txQueue?.length || 0),
       0
     );
   };
-  
+
   // Helper function to get highest block number
   const getHighestBlock = () => {
     if (!status) return 0;
     const blocks = Object.values(status)
-      .map(subnetStatus => subnetStatus.lastProcessedBlock || 0);
+      .map(subnetStatus => 0);
     return blocks.length > 0 ? Math.max(...blocks) : 0;
   };
-  
+
   // Calculate indicators based on real state
   const hasActiveSignal = status && Object.keys(status).length > 0;
   const txQueueSize = countPendingTx();
   const blockHeight = getHighestBlock();
   const subnetCount = status ? Object.keys(status).length : 0;
-  
+
   // Calculate power level as a percentage based on txQueueSize (max 100)
   const powerPercent = Math.min(100, txQueueSize * 5); // 5% per tx, max 100%
-  
+
   // Display loading text
   const statusText = isLoading ? "SYNCING" : error ? "ERROR" : "SIGNET";
-  
+
   return (
     <div style={{
       background: `linear-gradient(90deg, rgba(13, 17, 23, 0.8) 0%, rgba(125, 249, 255, 0.1) 50%, rgba(13, 17, 23, 0.8) 100%)`,
@@ -65,9 +65,9 @@ export function StatusDisplay() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <motion.div
           animate={{
-            boxShadow: isLoading 
-              ? ['0 0 2px rgba(125, 249, 255, 0.8)', '0 0 8px rgba(125, 249, 255, 0.8)', '0 0 2px rgba(125, 249, 255, 0.8)'] 
-              : error 
+            boxShadow: isLoading
+              ? ['0 0 2px rgba(125, 249, 255, 0.8)', '0 0 8px rgba(125, 249, 255, 0.8)', '0 0 2px rgba(125, 249, 255, 0.8)']
+              : error
                 ? ['0 0 2px rgba(255, 78, 78, 0.8)', '0 0 8px rgba(255, 78, 78, 0.8)', '0 0 2px rgba(255, 78, 78, 0.8)']
                 : ['0 0 2px rgba(125, 249, 255, 0.8)', '0 0 8px rgba(125, 249, 255, 0.8)', '0 0 2px rgba(125, 249, 255, 0.8)']
           }}
@@ -79,7 +79,7 @@ export function StatusDisplay() {
             backgroundColor: error ? '#FF4E4E' : colors.cyber,
           }}
         />
-        <motion.span 
+        <motion.span
           animate={{ opacity: isLoading ? [1, 0.5, 1] : 1 }}
           transition={{ duration: 1.5, repeat: Infinity }}
           style={{ fontSize: '12px', fontWeight: 'bold', color: error ? '#FF4E4E' : colors.cyber }}
@@ -92,9 +92,9 @@ export function StatusDisplay() {
           </span>
         )}
         {subnetCount > 0 && (
-          <span style={{ 
-            fontSize: '9px', 
-            color: 'rgba(54, 199, 88, 0.8)', 
+          <span style={{
+            fontSize: '9px',
+            color: 'rgba(54, 199, 88, 0.8)',
             background: 'rgba(54, 199, 88, 0.1)',
             padding: '1px 3px',
             borderRadius: '2px',
@@ -136,11 +136,11 @@ export function StatusDisplay() {
               )}
             </motion.div>
             {txQueueSize > 0 && (
-              <span style={{ 
-                position: 'absolute', 
-                top: '-10px', 
-                right: '-18px', 
-                fontSize: '8px', 
+              <span style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '-18px',
+                fontSize: '8px',
                 background: colors.cyber,
                 color: '#000',
                 padding: '1px 3px',
@@ -168,9 +168,9 @@ export function StatusDisplay() {
             {powerPercent > 0 && (
               <motion.div
                 animate={{ x: ['-100%', '100%'] }}
-                transition={{ 
-                  duration: 1.5, 
-                  repeat: Infinity, 
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
                   ease: 'linear',
                   // Speed up animation as power increases
                   repeatDelay: Math.max(0, 0.5 - (powerPercent / 200))

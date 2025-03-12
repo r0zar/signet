@@ -14,8 +14,8 @@ type NftTransferPanelProps = {
 };
 
 export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelProps = {}) {
-  const { signer, refreshStatus, createTransfer } = useSignetContext();
-  
+  const { currentAccount, refreshStatus, createTransfer } = useSignetContext();
+
   // State for NFTs - use manually defined balances for now
   const [selectedNft, setSelectedNft] = useState<Asset>(nftAssets[0]);
   const [recipient, setRecipient] = useState('');
@@ -25,15 +25,15 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
   });
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [selectedNftId, setSelectedNftId] = useState<number | null>(null);
-  
+
   // Skip the automatic balance loading for NFTs since they're not fully supported yet
   useEffect(() => {
     // Intentionally empty - will be implemented when backend support is added
-  }, [signer]);
+  }, [currentAccount.stxAddress]);
 
   // Placeholder method for NFT balance loading - will be implemented properly when backend support is added
   const loadNftBalances = async () => {
-    if (!signer) return;
+    if (!currentAccount.stxAddress) return;
 
     setIsLoadingBalances(true);
     try {
@@ -52,15 +52,15 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
   // Handle NFT transfer
   const handleTransferNft = async (e) => {
     e.preventDefault();
-    
+
     if (!recipient || selectedNftId === null) {
       return;
     }
-    
+
     try {
       // Use Date.now() as the nonce
       const nonce = Math.floor(Date.now());
-      
+
       // For NFTs, we use a special transfer operation
       // We could potentially modify this to use a different method for NFTs
       await createTransfer(
@@ -69,11 +69,11 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
         nonce,
         selectedNft.subnet
       );
-      
+
       // Reset form
       setRecipient('');
       setSelectedNftId(null);
-      
+
       // Refresh
       refreshStatus();
       loadNftBalances();
@@ -83,7 +83,7 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
   };
 
   // Check if the user has any NFTs
-  const hasNfts = nftAssets.some(asset => 
+  const hasNfts = nftAssets.some(asset =>
     nftBalances[asset.id] !== undefined && nftBalances[asset.id] > 0
   );
 
@@ -105,7 +105,7 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
           >
             Your NFTs
           </label>
-          
+
           <button
             type="button"
             onClick={loadNftBalances}
@@ -121,39 +121,39 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
             {isLoadingBalances ? 'Refreshing...' : 'Refresh NFTs'}
           </button>
         </div>
-        
+
         {isLoadingBalances ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
             padding: '20px',
-            color: colors.steel 
+            color: colors.steel
           }}>
             Loading NFTs...
           </div>
         ) : !hasNfts ? (
-          <div style={{ 
-            padding: '20px', 
+          <div style={{
+            padding: '20px',
             textAlign: 'center',
             border: '1px dashed rgba(125, 249, 255, 0.3)',
             borderRadius: '4px',
             color: colors.steel,
-            fontSize: '14px' 
+            fontSize: '14px'
           }}>
             You don't have any NFTs yet
           </div>
         ) : (
-          <div style={{ 
-            display: 'flex', 
+          <div style={{
+            display: 'flex',
             flexDirection: 'column',
-            gap: '12px' 
+            gap: '12px'
           }}>
             {nftAssets.map(asset => {
               if (!nftBalances[asset.id] || nftBalances[asset.id] <= 0) return null;
-              
+
               // For each NFT type, the user might have multiple tokens
               return (
-                <div 
+                <div
                   key={asset.id}
                   style={{
                     border: `1px solid rgba(125, 249, 255, 0.3)`,
@@ -162,11 +162,11 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
                     background: 'rgba(1, 4, 9, 0.8)',
                   }}
                 >
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '10px',
-                    marginBottom: '8px' 
+                    marginBottom: '8px'
                   }}>
                     {/* NFT icon */}
                     <div style={{
@@ -182,7 +182,7 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
                     }}>
                       {asset.symbol.charAt(0)}
                     </div>
-                    
+
                     <div>
                       <div style={{ fontSize: '16px', color: colors.cyber, fontWeight: 'bold' }}>
                         {asset.name}
@@ -192,16 +192,16 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Mock NFT Items - in a real implementation these would be individual tokens */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexWrap: 'wrap', 
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
                     gap: '8px',
                     marginBottom: '8px'
                   }}>
                     {Array.from({ length: nftBalances[asset.id] }, (_, i) => (
-                      <div 
+                      <div
                         key={i}
                         onClick={() => {
                           setSelectedNft(asset);
@@ -212,7 +212,7 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
                           height: '60px',
                           borderRadius: '4px',
                           background: selectedNftId === i + 1 && selectedNft.id === asset.id
-                            ? 'rgba(125, 249, 255, 0.3)' 
+                            ? 'rgba(125, 249, 255, 0.3)'
                             : 'rgba(125, 249, 255, 0.1)',
                           border: selectedNftId === i + 1 && selectedNft.id === asset.id
                             ? '2px solid rgba(125, 249, 255, 0.8)'
@@ -224,12 +224,12 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
                           transition: 'all 0.2s ease'
                         }}
                       >
-                        <div style={{ 
-                          fontSize: '12px', 
+                        <div style={{
+                          fontSize: '12px',
                           color: colors.cyber,
                           textAlign: 'center'
                         }}>
-                          ID<br/>{i + 1}
+                          ID<br />{i + 1}
                         </div>
                       </div>
                     ))}
@@ -240,12 +240,12 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
           </div>
         )}
       </div>
-      
+
       {/* Transfer Form */}
       {!isLoadingBalances && hasNfts && (
-        <form 
+        <form
           onSubmit={handleTransferNft}
-          style={{ 
+          style={{
             marginTop: '16px',
             display: 'flex',
             flexDirection: 'column',
@@ -259,7 +259,7 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
           <div style={{ fontSize: '14px', color: colors.cyber, fontWeight: 'bold', marginBottom: '8px' }}>
             Transfer NFT
           </div>
-          
+
           <div>
             <label
               htmlFor="nft-recipient"
@@ -300,7 +300,7 @@ export function NftTransferPanel({ skipInitialLoad = false }: NftTransferPanelPr
               }}
             />
           </div>
-          
+
           <motion.button
             type="submit"
             whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(125, 249, 255, 0.4)' }}

@@ -1,6 +1,6 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging"
 import { subnetRegistry } from "../index"
-import { TransactionType, assets } from "../lib/constants"
+import { TransactionType, WELSH, assets } from "../lib/constants"
 import type {
   TransactionRequest,
   Transfer,
@@ -37,7 +37,8 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         break;
 
       case "getBalance":
-        response = await subnetRegistry.getBalance(data?.address);
+        const welsh = await subnetRegistry.getSubnet(WELSH).fetchContractBalance(data.address);
+        response = { [WELSH]: welsh }
         break;
 
       case "getBalances":
@@ -46,7 +47,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
 
       // Asset operations
       case "getAssetBalances":
-        const subnetBalances = await subnetRegistry.getBalance(data?.address);
+        const subnetBalances = await subnetRegistry.getBalance(data.address);
 
         // Convert to asset balances
         const assetBalances: Record<string, number> = {};
@@ -79,6 +80,18 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
 
       case "checkWalletInitialized":
         response = await wallet.checkWalletInitialized();
+        break;
+
+      case "hasActiveWalletSession":
+        response = await wallet.hasActiveSession();
+        break;
+
+      case "initializeFromSession":
+        response = await wallet.initializeFromSession();
+        break;
+
+      case "endWalletSession":
+        response = await wallet.endSession();
         break;
 
       // Seed phrase management
@@ -117,7 +130,6 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
 
       // Account management
       case "createAccount":
-        console.log(data)
         if (!data?.seedPhraseId || typeof data.seedPhraseId !== "string") {
           throw new Error("Invalid account creation data");
         }
@@ -196,131 +208,74 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
 
       case "processTx":
         // Process different transaction types
-        if (!data) {
-          throw new Error("No transaction data provided");
+        if (!data || !data.type || !data.subnetId) {
+          throw new Error("Not all transaction data provided");
         }
 
         // Process transaction on the appropriate subnet
-        // If subnetId is provided, use that specific subnet
-        if (data.subnetId) {
-          await subnetRegistry.processTxRequest(data as TransactionRequest, data.subnetId);
-        } else {
-          // Otherwise let the registry figure out which subnet to use
-          await subnetRegistry.processTxRequest(data as TransactionRequest);
-        }
-
+        await subnetRegistry.processTxRequest(data);
         response = { success: true };
         break;
 
       case "createTransferTx":
         // Validate input data
-        if (!data?.to || typeof data.amount !== "number" || typeof data.nonce !== "number") {
+        if (!data.to || typeof data.amount !== "number" || typeof data.nonce !== "number") {
           throw new Error("Invalid transfer data");
         }
 
-        // Determine which subnet to use
-        const subnetId = data.subnet || assets[0].subnet; // Default to first asset's subnet if not specified
-
         // Sign the transfer using the specified subnet
-        const transferSignature = await subnetRegistry.generateSignature({
+        const transferSignature = await subnetRegistry.generateTransferSignature({
           to: data.to,
           amount: data.amount,
           nonce: data.nonce
-        }, subnetId);
+        }, data.subnetId);
 
         // Create transfer transaction
-        const transferTx: Transfer = {
+        const transferTx = {
           type: TransactionType.TRANSFER,
+          subnetId: data.subnetId,
           signature: transferSignature,
+          signer: subnetRegistry.signer,
           to: data.to,
           amount: data.amount,
           nonce: data.nonce
         };
 
-        console.log(transferTx)
-
         // Process it on the appropriate subnet
-        await subnetRegistry.processTxRequest(transferTx, subnetId);
+        await subnetRegistry.processTxRequest(transferTx);
 
         response = { success: true, transaction: transferTx };
         break;
 
       case "createPredictionTx":
         // Validate input data
-        if (typeof data?.marketId !== "number" ||
-          typeof data?.outcomeId !== "number" ||
-          typeof data?.amount !== "number" ||
-          !data?.signer ||
-          typeof data?.nonce !== "number") {
-          throw new Error("Invalid prediction data");
+        if (!data.to || typeof data.amount !== "number" || typeof data.nonce !== "number") {
+          throw new Error("Invalid transfer data");
         }
 
-        // Find the predictions subnet
-        const predictionsSubnetId = assets.find(a => a.symbol === "PREDICT")?.subnet ||
-          assets[1]?.subnet; // Fallback to the second asset if available
-
-        if (!predictionsSubnetId) {
-          throw new Error("Predictions subnet not found");
-        }
-
-        // Sign the prediction using the predictions subnet
-        const predictionSignature = await subnetRegistry.generateSignature({
-          to: predictionsSubnetId, // Use predictions subnet as target
+        // Sign the transfer using the specified subnet
+        const signature = await subnetRegistry.generateTransferSignature({
+          to: data.to,
           amount: data.amount,
           nonce: data.nonce
-        }, predictionsSubnetId);
+        }, data.subnetId);
 
-        // Create prediction transaction
+        // Create transfer transaction
         const predictionTx: Prediction = {
           type: TransactionType.PREDICT,
-          signature: predictionSignature,
-          marketId: data.marketId,
-          outcomeId: data.outcomeId,
+          subnetId: data.to,
+          signature: signature,
+          signer: subnetRegistry.signer,
           amount: data.amount,
-          nonce: data.nonce
+          nonce: data.nonce,
+          marketId: data.marketId,
+          outcomeId: data.outcomeId
         };
 
-        // Process it on the predictions subnet
-        await subnetRegistry.processTxRequest(predictionTx, predictionsSubnetId);
+        // Process it on the appropriate subnet
+        await subnetRegistry.processTxRequest(predictionTx);
 
         response = { success: true, transaction: predictionTx };
-        break;
-
-      case "createClaimRewardTx":
-        // Validate input data
-        if (typeof data?.receiptId !== "number" || !data?.signer || typeof data?.nonce !== "number") {
-          throw new Error("Invalid claim reward data");
-        }
-
-        // Find the predictions subnet (claims are processed on the predictions subnet)
-        const claimSubnetId = assets.find(a => a.symbol === "PREDICT")?.subnet ||
-          assets[1]?.subnet; // Fallback to the second asset if available
-
-        if (!claimSubnetId) {
-          throw new Error("Predictions subnet not found for claim");
-        }
-
-        // Create message for signing
-        const message = {
-          receipt_id: data.receiptId,
-          nonce: data.nonce
-        };
-
-        // Use subnet registry to generate signature
-        const claimSignature = await subnetRegistry.generateSignature(message, claimSubnetId);
-
-        // Create claim reward transaction
-        const claimTx: ClaimReward = {
-          type: TransactionType.CLAIM_REWARD,
-          signature: claimSignature,
-          receiptId: data.receiptId,
-          nonce: data.nonce
-        };
-
-        // Process it on the predictions subnet
-        await subnetRegistry.processTxRequest(claimTx, claimSubnetId);
-
-        response = { success: true, transaction: claimTx };
         break;
 
       case "deposit":
@@ -352,19 +307,34 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         response = { success: true };
         break;
 
-      case "mineBlock":
-        if (data?.subnetId && typeof data.subnetId === "string") {
-          // Mine a specific subnet
-          response = await subnetRegistry.mineBlock(data.subnetId, data?.batchSize);
-        } else {
-          // Mine all pending transactions across all subnets
-          response = await subnetRegistry.mineAllPendingBlocks(data?.batchSize);
+      case "mineSingleTransaction":
+        // Validate input data
+        if (!data?.signature) {
+          throw new Error("Transaction signature is required for single mining");
         }
+
+        // Mine the transaction
+        response = await subnetRegistry.mineSingleTransaction(data.signature, data.subnetId);
         break;
 
-      case "mineAllPendingBlocks":
-        // Mine all pending transactions across all subnets
-        response = await subnetRegistry.mineAllPendingBlocks(data?.batchSize);
+      case "mineBatchTransactions":
+        // Validate input data
+        if (!data?.signatures || !Array.isArray(data.signatures) || data.signatures.length === 0) {
+          throw new Error("Array of transaction signatures is required for batch mining");
+        }
+
+        // Mine the batch of transactions
+        response = await subnetRegistry.mineBatchTransactions(data.signatures);
+        break;
+
+      case "discardTransaction":
+        // Validate input data
+        if (!data?.signature) {
+          throw new Error("Transaction signature is required for discarding");
+        }
+
+        // Discard the transaction from the mempool
+        response = subnetRegistry.discardTransaction(data.signature, data.subnetId);
         break;
 
       default:

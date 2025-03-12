@@ -1,6 +1,7 @@
 import { Subnet } from './subnet';
 import { WELSH, PREDICTIONS } from './constants';
-import type { TransactionRequest, Status, TransactionResult } from './types';
+import type { TransactionRequest, TransactionResult } from './types';
+import type { Status } from '~shared/context/types';
 
 /**
  * SubnetRegistry - Manages multiple subnet instances
@@ -24,8 +25,8 @@ export class SubnetRegistry {
     this.subnets.set(WELSH, welshSubnet);
 
     // Create Predictions subnet
-    // const predictionsSubnet = new Subnet(PREDICTIONS);
-    // this.subnets.set(PREDICTIONS, predictionsSubnet);
+    const predictionsSubnet = new Subnet(PREDICTIONS);
+    this.subnets.set(PREDICTIONS, predictionsSubnet);
   }
 
   /**
@@ -66,29 +67,20 @@ export class SubnetRegistry {
   /**
    * Process a transaction request on the appropriate subnet
    */
-  public async processTxRequest(txRequest: TransactionRequest, subnetId?: string): Promise<void> {
-    console.log(`Processing transaction request:`, txRequest, subnetId);
+  public async processTxRequest(txRequest: TransactionRequest): Promise<void> {
     // If subnet is specified, use that specific subnet
-    if (subnetId && this.subnets.has(subnetId)) {
-      await this.subnets.get(subnetId).processTxRequest(txRequest);
+    if (this.subnets.has(txRequest.subnetId)) {
+      await this.subnets.get(txRequest.subnetId).processTxRequest(txRequest);
       return;
     }
 
-    // Otherwise, try to determine subnet from the transaction type
-    for (const subnet of this.subnets.values()) {
-      if (subnet.canProcessTransaction(txRequest)) {
-        await subnet.processTxRequest(txRequest);
-        return;
-      }
-    }
-
-    throw new Error(`No subnet found that can process transaction type: ${txRequest.type}`);
+    throw new Error(`Subnet can not process transaction type: ${txRequest.type}`);
   }
 
   /**
    * Get balance for a specific address across all subnets
    */
-  public async getBalance(address?: string): Promise<Record<string, number>> {
+  public async getBalance(address: string): Promise<Record<string, number>> {
     const balances: Record<string, number> = {};
     const userAddress = address || this._signer;
 
@@ -97,8 +89,12 @@ export class SubnetRegistry {
     }
 
     for (const [contractId, subnet] of this.subnets.entries()) {
-      balances[contractId] = await subnet.getBalance(userAddress);
+      await subnet.refreshBalances(userAddress)
+      if (subnet.canProcessTransaction({ type: 'TRANSFER' } as any)) {
+        balances[contractId] = await subnet.getBalance(userAddress)
+      }
     }
+    console.log(balances)
 
     return balances;
   }
@@ -139,49 +135,184 @@ export class SubnetRegistry {
   }
 
   /**
-   * Mine a block on a specific subnet
+   * Mine a single transaction by its signature
+   * @param signature The signature of the transaction to mine
+   * @param subnetId Optional: specific subnet ID to mine from (if not provided, will try all subnets)
+   * @returns Object with result of the mining operation
    */
-  public async mineBlock(subnetId: string, batchSize?: number): Promise<TransactionResult> {
-    if (!this.subnets.has(subnetId)) {
-      throw new Error(`Subnet not found: ${subnetId}`);
-    }
+  public async mineSingleTransaction(signature: string, subnetId?: string): Promise<{
+    success: boolean;
+    txid?: string;
+    subnet?: string;
+    error?: string;
+  }> {
+    // If a specific subnet is provided, only try that one
+    if (subnetId && this.subnets.has(subnetId)) {
+      try {
+        const result = await this.subnets.get(subnetId).mineSingleTransaction(signature);
+        return {
+          success: true,
+          txid: result.txid,
+          subnet: subnetId
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          subnet: subnetId
+        };
+      }
+    } else {
+      // Try all subnets until we find the transaction
+      for (const [id, subnet] of this.subnets.entries()) {
+        try {
+          const result = await subnet.mineSingleTransaction(signature);
+          return {
+            success: true,
+            txid: result.txid,
+            subnet: id
+          };
+        } catch (error) {
+          // If the error is "transaction not found", continue to the next subnet
+          if (!error.message.includes('not found')) {
+            return {
+              success: false,
+              error: error.message,
+              subnet: id
+            };
+          }
+          // Otherwise, continue to next subnet
+        }
+      }
 
-    return await this.subnets.get(subnetId).mineBlock(batchSize);
+      // If we get here, the transaction wasn't found in any subnet
+      return {
+        success: false,
+        error: `Transaction with signature ${signature} not found in any subnet`
+      };
+    }
   }
 
   /**
-   * Mine blocks on all subnets that have pending transactions
+   * Mine selected transactions in batch 
+   * @param signatures Array of transaction signatures to mine
+   * @returns Object with results of the mining operations by subnet
    */
-  public async mineAllPendingBlocks(batchSize?: number): Promise<Record<string, TransactionResult>> {
-    const results: Record<string, TransactionResult> = {};
+  public async mineBatchTransactions(signatures: string[]): Promise<{
+    success: boolean;
+    results: Record<string, {
+      success: boolean;
+      txid?: string;
+      error?: string;
+      count: number;
+    }>;
+  }> {
+    if (!signatures || signatures.length === 0) {
+      return {
+        success: false,
+        results: {}
+      };
+    }
 
-    for (const [contractId, subnet] of this.subnets.entries()) {
-      // Only mine if there are pending transactions
-      if (subnet.hasPendingTransactions()) {
-        try {
-          results[contractId] = await subnet.mineBlock(batchSize);
-        } catch (error) {
-          console.error(`Error mining block for subnet ${contractId}:`, error);
+    const results: Record<string, {
+      success: boolean;
+      txid?: string;
+      error?: string;
+      count: number; // Number of transactions mined in this subnet
+    }> = {};
+
+    // Group signatures by subnet
+    const signaturesBySubnet: Record<string, string[]> = {};
+
+    // First, try to find each transaction in a subnet
+    for (const signature of signatures) {
+      let found = false;
+
+      // Look in each subnet for this transaction
+      for (const [subnetId, subnet] of this.subnets.entries()) {
+        const tx = subnet.mempool.findTransactionBySignature(signature);
+        if (tx) {
+          // Add to the appropriate group
+          if (!signaturesBySubnet[subnetId]) {
+            signaturesBySubnet[subnetId] = [];
+          }
+          signaturesBySubnet[subnetId].push(signature);
+          found = true;
+          break; // Move to next signature once found
         }
+      }
+
+      if (!found) {
+        console.warn(`Transaction with signature ${signature} not found in any subnet`);
       }
     }
 
-    if (Object.keys(results).length === 0) {
-      throw new Error('No pending transactions to mine on any subnet');
+    // Now mine transactions by subnet
+    for (const [subnetId, sigs] of Object.entries(signaturesBySubnet)) {
+      if (sigs.length === 0) continue;
+
+      try {
+        // For now, we'll mine each transaction individually within a subnet
+        // A future optimization could batch transactions of the same type
+        for (const signature of sigs) {
+          try {
+            const result = await this.subnets.get(subnetId).mineSingleTransaction(signature);
+
+            // Initialize subnet result if needed
+            if (!results[subnetId]) {
+              results[subnetId] = {
+                success: true,
+                count: 0
+              };
+            }
+
+            // Mark success and increment count
+            results[subnetId].success = true;
+            results[subnetId].txid = result.txid; // Store the last txid
+            results[subnetId].count++;
+
+          } catch (error) {
+            // Initialize subnet result if needed
+            if (!results[subnetId]) {
+              results[subnetId] = {
+                success: false,
+                error: error.message,
+                count: 0
+              };
+            } else {
+              // Add error information but don't override previous successes
+              results[subnetId].error = error.message;
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error batch mining transactions for subnet ${subnetId}:`, error);
+        results[subnetId] = {
+          success: false,
+          error: error.message,
+          count: 0
+        };
+      }
     }
 
-    return results;
+    // Determine overall success - at least one transaction mined successfully
+    const overallSuccess = Object.values(results).some(result => result.success && result.count > 0);
+
+    return {
+      success: overallSuccess,
+      results
+    };
   }
 
   /**
    * Generate a signature for a message using the appropriate subnet
    */
-  public async generateSignature(message: any, subnetId: string): Promise<string> {
+  public async generateTransferSignature(message: any, subnetId: string): Promise<string> {
     if (!this.subnets.has(subnetId)) {
       throw new Error(`Subnet not found: ${subnetId}`);
     }
 
-    return await this.subnets.get(subnetId).generateSignature(message);
+    return await this.subnets.get(subnetId).generateTransferSignature(message);
   }
 
   /**
@@ -203,7 +334,40 @@ export class SubnetRegistry {
   /**
    * Get a specific subnet instance
    */
-  public getSubnet(subnetId: string): Subnet | undefined {
+  public getSubnet(subnetId: string): Subnet {
     return this.subnets.get(subnetId);
+  }
+
+  /**
+   * Discard a transaction from all subnets by its signature
+   * @param signature The signature of the transaction to discard
+   * @param subnetId Optional: specific subnet ID to discard from (if not provided, will try all subnets)
+   * @returns Object with success status and details of which subnets the transaction was removed from
+   */
+  public discardTransaction(signature: string, subnetId?: string): {
+    success: boolean;
+    removedFrom: string[]
+  } {
+    const removedFrom: string[] = [];
+
+    // If a specific subnet is provided, only try that one
+    if (subnetId && this.subnets.has(subnetId)) {
+      const subnet = this.subnets.get(subnetId);
+      if (subnet.discardTransaction(signature)) {
+        removedFrom.push(subnetId);
+      }
+    } else {
+      // Try all subnets
+      for (const [id, subnet] of this.subnets.entries()) {
+        if (subnet.discardTransaction(signature)) {
+          removedFrom.push(id);
+        }
+      }
+    }
+
+    return {
+      success: removedFrom.length > 0,
+      removedFrom
+    };
   }
 }

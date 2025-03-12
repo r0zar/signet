@@ -7,13 +7,12 @@ export enum TransactionType {
 
 // Subnet contract addresses
 export const WELSH = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.blaze-welsh-v1';
-export const PREDICTIONS = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.blaze-welsh-predict-v1';
+export const PREDICTIONS = 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.blaze-welsh-predictions-v1';
 
 // Map subnet contracts to their associated tokens
 export const subnetTokens: Record<`${string}.${string}`, `${string}.${string}::${string}`> = {
     [WELSH]: 'SP3NE50GEXFG9SZGTT51P40X2CKYSZ5CC4ZTZ7A2G.welshcorgicoin-token::welshcorgicoin',
-    // TODO: make new subnetNFTs mapping
-    // [PREDICTIONS]: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.blaze-welsh-predict-v1::prediction'
+    [PREDICTIONS]: 'SP2ZNGJ85ENDY6QRHQ5P2D4FXKGZWCKTB2T0Z55KS.blaze-welsh-predictions-v1::prediction-receipt'
 };
 
 // Map transaction types to their target contracts and batch functions

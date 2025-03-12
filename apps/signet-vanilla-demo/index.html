@@ -213,6 +213,13 @@
       position: relative;
       overflow: hidden;
     }
+    
+    /* Individual panel sections */
+    .control-panel > div {
+      margin-bottom: 0.25rem;
+      padding: 0.5rem;
+      border-radius: 3px;
+    }
 
     .control-panel::after {
       content: "";
@@ -294,6 +301,37 @@
     button.primary:hover {
       background-color: rgba(125, 249, 255, 0.25);
       box-shadow: 0 0 10px rgba(125, 249, 255, 0.4);
+    }
+    
+    button.disabled, button[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background-color: rgba(22, 27, 34, 0.4);
+      border-color: rgba(125, 249, 255, 0.1);
+    }
+    
+    button.disabled::after, button[disabled]::after {
+      display: none;
+    }
+    
+    button.disabled:hover, button[disabled]:hover {
+      background-color: rgba(22, 27, 34, 0.4);
+      border-color: rgba(125, 249, 255, 0.1);
+      box-shadow: none;
+    }
+    
+    /* Enabled sections */
+    .enabled .panel-title {
+      animation: pulse 2s infinite;
+      color: var(--neon-green);
+      border-bottom-color: rgba(54, 199, 88, 0.4);
+    }
+    
+    .enabled {
+      /* Green border with added padding */
+      border: 1px solid rgba(54, 199, 88, 0.3);
+      box-shadow: 0 0 10px rgba(54, 199, 88, 0.1);
+      padding: 2px;  /* Added padding for better spacing */
     }
 
     /* Badges */
@@ -518,6 +556,7 @@
           <span id="extension-status" class="badge error">Extension Not Detected</span>
           <span id="debug-badge" class="badge info">API Calls: 0</span>
           <span id="balance-badge" class="badge outline" style="display: none;">Wallet</span>
+          <span id="signer-badge" class="badge outline" style="display: none;">Signer</span>
           <span id="connection-badge" class="badge success" style="display: none;">Connected</span>
         </div>
       </div>
@@ -531,9 +570,15 @@
       </div>
 
       <div id="subnet-actions">
-        <h4 class="panel-title">Subnet Operations</h4>
+        <h4 class="panel-title">Get Balance</h4>
         <div class="sdk-actions">
           <button id="get-balance">Get Balance</button>
+        </div>
+      </div>
+      
+      <div id="all-balances-actions">
+        <h4 class="panel-title">Get All Balances</h4>
+        <div class="sdk-actions">
           <button id="get-all-balances">Get All Balances</button>
         </div>
       </div>

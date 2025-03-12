@@ -21,7 +21,8 @@ export function WalletTab() {
     activateAccount,
     deleteSeedPhrase,
     resetWallet,
-    refreshWalletState
+    refreshWalletState,
+    endSession,
   } = useSignetContext();
 
   // Form state for wallet tab
@@ -55,6 +56,7 @@ export function WalletTab() {
         await initializeWallet(walletPassword);
         setWalletPassword('');
         refreshWalletState();
+        setWalletView('accounts');
       } catch (err) {
         console.error('Error initializing wallet:', err);
       }
@@ -143,6 +145,16 @@ export function WalletTab() {
       } catch (err) {
         console.error('Error resetting wallet:', err);
       }
+    }
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await endSession();
+      setWalletView('setup');
+    } catch (err) {
+      console.error('Error signing out:', err);
     }
   };
 
@@ -259,7 +271,7 @@ export function WalletTab() {
                         symbolIndex = Math.abs((seed * (index + 1) * (attempt + 1) * 31) % symbols.length);
                         attempt++;
                       } while (usedSymbols.includes(symbolIndex) && attempt < 5);
-                      
+
                       // Create a completely unique set of used symbols for each render
                       // This ensures even typing the same password twice will show different symbols
                       // This adds to security as no visual pattern can be observed between sessions
@@ -983,25 +995,47 @@ export function WalletTab() {
             </motion.button>
           </div>
 
-          {/* Reset wallet button */}
-          <motion.button
-            onClick={handleResetWallet}
-            whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(255, 78, 78, 0.4)' }}
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: '6px 10px',
-              background: 'rgba(255, 78, 78, 0.05)',
-              border: '1px solid rgba(255, 78, 78, 0.3)',
-              borderRadius: '4px',
-              color: '#FF4E4E',
-              cursor: 'pointer',
-              fontSize: '10px',
-              alignSelf: 'center',
-              marginTop: '8px'
-            }}
-          >
-            Reset Wallet
-          </motion.button>
+          {/* Sign out and Reset wallet buttons */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center',
+            marginTop: '8px'
+          }}>
+            <motion.button
+              onClick={handleSignOut}
+              whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(125, 249, 255, 0.4)' }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                padding: '6px 10px',
+                background: 'rgba(125, 249, 255, 0.1)',
+                border: '1px solid rgba(125, 249, 255, 0.4)',
+                borderRadius: '4px',
+                color: colors.cyber,
+                cursor: 'pointer',
+                fontSize: '10px'
+              }}
+            >
+              Sign Out
+            </motion.button>
+
+            <motion.button
+              onClick={handleResetWallet}
+              whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(255, 78, 78, 0.4)' }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                padding: '6px 10px',
+                background: 'rgba(255, 78, 78, 0.05)',
+                border: '1px solid rgba(255, 78, 78, 0.3)',
+                borderRadius: '4px',
+                color: '#FF4E4E',
+                cursor: 'pointer',
+                fontSize: '10px'
+              }}
+            >
+              Reset Wallet
+            </motion.button>
+          </div>
         </div>
       )}
     </div>

@@ -7,9 +7,10 @@ import { useSignetContext } from '~shared/context/SignetContext';
 import { colors } from '../../../shared/styles/theme';
 import { motion } from 'framer-motion';
 import { tokenAssets, type Asset } from '../../../background/lib/constants';
+import { c } from 'framer-motion/dist/types.d-6pKw1mTI';
 
 export function TokenTransferPanel() {
-  const { signer, refreshStatus, createTransfer, getAssetBalances } = useSignetContext();
+  const { currentAccount, refreshStatus, createTransfer, getAssetBalances } = useSignetContext();
 
   // Form state for transfer tab
   const [recipient, setRecipient] = useState('');
@@ -20,18 +21,18 @@ export function TokenTransferPanel() {
 
   // Load asset balances when signer changes
   useEffect(() => {
-    if (signer) {
+    if (currentAccount.stxAddress) {
       loadAssetBalances();
     }
-  }, [signer]);
+  }, [currentAccount.stxAddress]);
 
   // Load balances of all assets
   const loadAssetBalances = async () => {
-    if (!signer) return;
+    if (!currentAccount.stxAddress) return;
 
     setIsLoadingBalances(true);
     try {
-      const balances = await getAssetBalances();
+      const balances = await getAssetBalances(currentAccount.stxAddress);
       setAssetBalances(balances);
     } catch (error) {
       console.error('Failed to load asset balances:', error);
@@ -275,8 +276,8 @@ export function TokenTransferPanel() {
               }}
             />
             <div className="signet-number-control">
-              <div 
-                className="signet-number-up" 
+              <div
+                className="signet-number-up"
                 onClick={() => {
                   const current = parseFloat(amount) || 0;
                   setAmount((current + 1).toString());
@@ -284,8 +285,8 @@ export function TokenTransferPanel() {
               >
                 ▲
               </div>
-              <div 
-                className="signet-number-down" 
+              <div
+                className="signet-number-down"
                 onClick={() => {
                   const current = parseFloat(amount) || 0;
                   if (current >= 2) {
@@ -322,7 +323,7 @@ export function TokenTransferPanel() {
           marginTop: '8px'
         }}
       >
-        Transfer {selectedAsset.symbol}
+        Sign Transfer
       </motion.button>
     </form>
   );

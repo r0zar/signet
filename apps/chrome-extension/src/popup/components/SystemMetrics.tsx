@@ -9,7 +9,7 @@ import { useSignetContext } from "~shared/context/SignetContext"
 
 export function SystemMetrics() {
   // Get state and actions from the context
-  const { status, refreshStatus, isLoading, refreshBalances, mineAllPendingBlocks } = useSignetContext();
+  const { status, refreshStatus, isLoading, refreshBalances } = useSignetContext();
 
   // Helper function to count all pending transactions
   const countPendingTx = () => {
@@ -24,7 +24,7 @@ export function SystemMetrics() {
   const getHighestBlock = () => {
     if (!status) return 0;
     const blocks = Object.values(status)
-      .map(subnetStatus => subnetStatus.lastProcessedBlock || 0);
+      .map(subnetStatus => 0);
     return blocks.length > 0 ? Math.max(...blocks) : 0;
   };
 
@@ -47,13 +47,6 @@ export function SystemMetrics() {
   const handleRefreshClick = () => {
     refreshStatus();
     refreshBalances();
-  };
-
-  // Handle mine click when transactions are pending
-  const handleMineClick = () => {
-    if (txQueueSize > 0) {
-      mineAllPendingBlocks();
-    }
   };
 
   return (
@@ -114,64 +107,6 @@ export function SystemMetrics() {
             }}
           />
           SYNC
-        </motion.button>
-
-        {/* Mine transactions button - only active when transactions are pending */}
-        <motion.button
-          onClick={handleMineClick}
-          whileHover={txQueueSize > 0 ? { scale: 1.05, boxShadow: '0 0 8px rgba(125, 249, 255, 0.8)' } : {}}
-          whileTap={txQueueSize > 0 ? { scale: 0.95 } : {}}
-          style={{
-            background: txQueueSize > 0
-              ? 'rgba(125, 249, 255, 0.15)'
-              : 'rgba(125, 249, 255, 0.05)',
-            border: `1px solid ${txQueueSize > 0
-              ? 'rgba(125, 249, 255, 0.4)'
-              : 'rgba(125, 249, 255, 0.2)'}`,
-            borderRadius: '4px',
-            padding: '6px 10px',
-            fontSize: '10px',
-            color: txQueueSize > 0 ? '#7DF9FF' : 'rgba(125, 249, 255, 0.4)',
-            cursor: txQueueSize > 0 ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            opacity: txQueueSize > 0 ? 1 : 0.7
-          }}
-        >
-          {/* Status indicator dot with activity animation based on queue size */}
-          <motion.div
-            animate={txQueueSize > 0
-              ? {
-                scale: [1, 1.2, 1],
-                opacity: [0.8, 1, 0.8],
-                boxShadow: [
-                  '0 0 2px rgba(125, 249, 255, 0.8)',
-                  '0 0 6px rgba(125, 249, 255, 0.8)',
-                  '0 0 2px rgba(125, 249, 255, 0.8)'
-                ]
-              }
-              : { opacity: 0.5 }
-            }
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              // Speed up animation as queue grows
-              repeatDelay: Math.max(0, 0.5 - (txQueueSize / 40))
-            }}
-            style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: txQueueSize > 0 ? '#7DF9FF' : 'rgba(125, 249, 255, 0.4)',
-              boxShadow: txQueueSize > 0 ? '0 0 4px #7DF9FF' : 'none'
-            }}
-          />
-          {/* Button label showing transaction count */}
-          <span style={{ display: 'flex', alignItems: 'center' }}>
-            MINE {txQueueSize > 0 ? `(${txQueueSize})` : ''}
-          </span>
         </motion.button>
       </div>
     </div>

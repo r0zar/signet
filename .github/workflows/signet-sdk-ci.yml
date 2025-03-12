@@ -1,0 +1,98 @@
+name: Signet SDK CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/signet-sdk/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/signet-sdk/**'
+  workflow_dispatch:
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+          
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+            
+      - name: Install dependencies
+        run: pnpm install
+        
+      - name: Lint
+        run: pnpm --filter signet-sdk lint
+        
+      - name: Type check
+        run: pnpm --filter signet-sdk typecheck
+        
+      - name: Build
+        run: pnpm --filter signet-sdk build
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: signet-sdk-dist
+          path: packages/signet-sdk/dist/
+          
+  publish:
+    name: Publish to NPM
+    needs: build_and_test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: signet-sdk-dist
+          path: packages/signet-sdk/dist/
+          
+      - name: Install dependencies
+        run: pnpm install
+        
+      - name: Publish to NPM
+        run: cd packages/signet-sdk && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

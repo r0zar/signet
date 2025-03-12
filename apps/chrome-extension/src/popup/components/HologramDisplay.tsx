@@ -240,7 +240,7 @@ const MemoryBar = ({ value, color, max = 100 }) => {
 // Main HUD component
 export function HologramDisplay() {
   // Get state from the context
-  const { status, signer, isLoading, error } = useSignetContext();
+  const { status, currentAccount, isLoading, error } = useSignetContext();
 
   // Function to count all pending transactions across subnets
   const countPendingTx = () => {
@@ -255,7 +255,7 @@ export function HologramDisplay() {
   const getHighestBlock = () => {
     if (!status) return 0;
     const blocks = Object.values(status)
-      .map(subnetStatus => subnetStatus.lastProcessedBlock || 0);
+      .map(subnetStatus => 0);
     return blocks.length > 0 ? Math.max(...blocks) : 0;
   };
 
@@ -306,7 +306,7 @@ export function HologramDisplay() {
       'rgba(125, 249, 255, 0.8)'; // Cyan for normal
 
   // Active signer color
-  const signerColor = signer ? 'rgba(54, 199, 88, 0.8)' : 'rgba(125, 249, 255, 0.4)';
+  const signerColor = currentAccount.stxAddress ? 'rgba(54, 199, 88, 0.8)' : 'rgba(125, 249, 255, 0.4)';
 
   // Data metrics
   const metrics = [
@@ -592,7 +592,7 @@ export function HologramDisplay() {
             flexDirection: 'column',
             justifyContent: 'center'
           }}>
-            {signer ? (
+            {currentAccount.stxAddress ? (
               <div>
                 <div style={{
                   fontSize: '8px',
@@ -617,7 +617,7 @@ export function HologramDisplay() {
                   color: 'rgba(125, 249, 255, 0.9)',
                   wordBreak: 'break-all'
                 }}>
-                  {signer.slice(0, 6)}...{signer.slice(-6)}
+                  {currentAccount.stxAddress.slice(0, 6)}...{currentAccount.stxAddress.slice(-6)}
                 </div>
                 <MemoryBar
                   value={100}

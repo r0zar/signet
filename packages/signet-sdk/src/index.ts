@@ -26,16 +26,17 @@ export interface ExtensionStatusResponse {
     version?: string;
 }
 
+// Subnet data returned by the extension
+export interface SubnetData {
+    subnet: string;
+    signer: string;
+    token: string;
+    txQueue: any[];
+}
+
+// Status response is a map of subnet IDs to subnet data
 export interface SignetStatusResponse {
-    connected: boolean;
-    activeSubnet?: string;
-    availableSubnets?: string[];
-    wallet?: {
-        address?: string;
-        balance?: {
-            [tokenId: string]: string;
-        };
-    };
+    [subnetId: string]: SubnetData;
 }
 
 // No caching - we'll check the extension status each time
@@ -78,7 +79,6 @@ export async function checkExtensionInstalled(): Promise<ExtensionStatusResponse
  */
 export async function getSignetStatus(): Promise<SignetStatusResponse> {
     try {
-
         // Directly request status without checking extension first
         // This allows us to see all permission requests
         const response = await request<null, SignetStatusResponse>({
@@ -88,30 +88,55 @@ export async function getSignetStatus(): Promise<SignetStatusResponse> {
 
         return response.data;
     } catch (error) {
-        // Return disconnected status on error
-        return { connected: false };
+        // Return empty object on error
+        return {};
     }
+}
+
+/**
+ * Helper function to get all subnet IDs from status response
+ */
+export function getSubnetIds(status: SignetStatusResponse): string[] {
+    return Object.keys(status);
+}
+
+/**
+ * Helper function to get subnet data for a specific subnet
+ */
+export function getSubnetData(status: SignetStatusResponse, subnetId: string): SubnetData | null {
+    return status[subnetId] || null;
 }
 
 // Define transaction-related interfaces
 export interface TransactionResult {
     success: boolean;
-    txId?: string;
     error?: string;
-    details?: any;
+    transaction?: {
+        to: string;
+        amount: number;
+        nonce: number;
+        signature: string;
+        signer: string;
+        subnetId: string;
+        type: string;
+    };
 }
 
 // Subnet operations
 
 /**
- * Get balance for the current connected wallet or a specific address
+ * Get balance for a specific subnet and address
+ * @param subnetId The subnet ID to get balance for
+ * @param address Optional address to check balance for (uses current signer if not provided)
  */
-export async function getBalance(address?: string): Promise<Record<string, number>> {
+export async function getBalance(subnetId: string, address?: string): Promise<Record<string, number>> {
     try {
-
-        const response = await request<{ address?: string }, Record<string, number>>({
+        const response = await request<{ subnet: string, address?: string }, Record<string, number>>({
             type: MessageType.GET_BALANCE,
-            data: { address }
+            data: {
+                subnet: subnetId,
+                address
+            }
         });
 
         return response.data;
@@ -123,10 +148,10 @@ export async function getBalance(address?: string): Promise<Record<string, numbe
 
 /**
  * Get all balances across all subnets
+ * @returns A map of subnet IDs to balance records
  */
 export async function getBalances(): Promise<Record<string, Record<string, number>>> {
     try {
-
         const response = await request<null, Record<string, Record<string, number>>>({
             type: MessageType.GET_BALANCES,
             data: null
@@ -143,31 +168,38 @@ export async function getBalances(): Promise<Record<string, Record<string, numbe
  * Create and execute a transfer transaction
  */
 export async function createTransfer(params: {
+    subnetId: string;
     to: string;
     amount: number;
     nonce: number;
-    subnet?: string;
 }): Promise<TransactionResult> {
     try {
-        // The extension handles nonce calculation
         const response = await request<{
+            subnetId: string;
             to: string;
             amount: number;
             nonce: number;
-            subnet?: string;
         }, TransactionResult>({
             type: MessageType.CREATE_TRANSFER_TX,
-            data: {
-                to: params.to,
-                amount: params.amount,
-                subnet: params.subnet,
-                nonce: params.nonce
-            }
+            data: params
         });
 
         return response.data;
     } catch (error) {
         console.error('Failed to create transfer:', error);
+        return { success: false };
+    }
+}
+
+/**
+ * Signature request for a prediction transaction
+ */
+export async function signPrediction(data: any): Promise<any> {
+    try {
+        const response = await request<any, any>({ type: MessageType.SIGN_PREDICTION, data });
+        return response.data;
+    } catch (error) {
+        console.error('Failed to create prediction:', error);
         return { success: false };
     }
 }

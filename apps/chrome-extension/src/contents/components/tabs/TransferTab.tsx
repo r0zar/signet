@@ -9,7 +9,7 @@ import { TokenTransferPanel } from './TokenTransferPanel';
 import { NftTransferPanel } from './NftTransferPanel';
 
 export function TransferTab() {
-  const { signer } = useSignetContext();
+  const { currentAccount } = useSignetContext();
   const [activeTab, setActiveTab] = useState<'tokens' | 'nfts'>('tokens');
 
   // Skip NFTs balance check when tab initially loads
@@ -42,7 +42,7 @@ export function TransferTab() {
       flexDirection: 'column',
       gap: '16px'
     }}>
-      {!signer ? (
+      {!currentAccount.stxAddress ? (
         <div style={{
           padding: '16px',
           textAlign: 'center',
@@ -77,7 +77,8 @@ export function TransferTab() {
           {activeTab === 'tokens' ? (
             <TokenTransferPanel />
           ) : (
-            <NftTransferPanel skipInitialLoad={!hasLoadedNFTs} />
+            <> ok</>
+            // <NftTransferPanel skipInitialLoad={!hasLoadedNFTs} />
           )}
         </>
       )}

@@ -6,14 +6,16 @@ import {
   getSignetStatus,
   getBalance,
   getBalances,
-  createTransfer
+  createTransfer,
+  getSubnetIds,
+  getSubnetData
 } from 'signet-sdk';
 
 // State tracking
 let extensionAvailable = false;
 let currentStatus = null;
-let activeSubnet = null;
-let walletAddress = null;
+let selectedSubnetId = null;  // Currently selected subnet ID
+let subnets = {};           // Map of subnet IDs to subnet data
 
 // Message tracking for debugging
 const messageTracker = {
@@ -38,9 +40,6 @@ const messageTracker = {
         this.counts.balance + this.counts.transfer + this.counts.mining;
       badge.textContent = `API Calls: ${total}`;
     }
-
-    // Log full details to console for debugging
-    console.log(`Message counts:`, this.counts);
   }
 };
 
@@ -50,9 +49,6 @@ function init() {
   subscribe((message) => {
     // Track message for debugging
     messageTracker.track(message.type);
-
-    // Log message to console
-    console.log('Received message:', message);
 
     // Update UI based on message type
     if (message.type === MessageType.CHECK_EXTENSION_INSTALLED) {
@@ -87,57 +83,113 @@ function init() {
   document.getElementById('get-status').addEventListener('click', () => {
     getSignetStatus()
       .then(result => {
-        // Store essential information only
+        console.log('Status result:', result);
+
+        // Store the status result
         currentStatus = result;
 
-        if (result.connected) {
-          // Update critical state variables
-          activeSubnet = result.activeSubnet;
-          walletAddress = result.wallet?.address;
+        // Clear previous subnets and reset selection
+        subnets = {};
 
-          // Update connection status badge
-          const connectionBadge = document.getElementById('connection-badge');
-          connectionBadge.style.display = 'inline-block';
-          connectionBadge.textContent = `Connected: ${activeSubnet || 'No Subnet'}`;
+        // Check if we have any subnets
+        const subnetIds = getSubnetIds(result);
+        const hasSubnets = subnetIds.length > 0;
 
-          // Update wallet badge if available
-          if (walletAddress) {
-            const shortenedAddress = walletAddress.slice(0, 5) + '...' + walletAddress.slice(-4);
-            const balanceBadge = document.getElementById('balance-badge');
-            balanceBadge.style.display = 'inline-block';
-            balanceBadge.textContent = shortenedAddress;
+        if (hasSubnets) {
+          console.log('Found subnets:', subnetIds);
+
+          // Store subnet data
+          for (const subnetId of subnetIds) {
+            subnets[subnetId] = result[subnetId];
           }
-        } else {
-          // Just hide status badges if not connected
-          document.getElementById('connection-badge').style.display = 'none';
-          document.getElementById('balance-badge').style.display = 'none';
 
-          // Set state variables to null
-          activeSubnet = null;
-          walletAddress = null;
+          // Select first subnet as default if not already selected
+          if (!selectedSubnetId || !result[selectedSubnetId]) {
+            selectedSubnetId = subnetIds[0];
+          }
+
+          // Get info for the selected subnet
+          const subnetData = result[selectedSubnetId];
+          console.log('Selected subnet:', selectedSubnetId, subnetData);
+
+          // Update UI based on subnet data
+          updateUI(selectedSubnetId, subnetData);
+
+          // Enable operations if we have a signer
+          const hasSigner = !!subnetData.signer;
+          enableOperations(hasSigner);
+        } else {
+          console.log('No subnets found');
+
+          // Reset state
+          selectedSubnetId = null;
+
+          // Update UI for disconnected state
+          hideAllBadges();
+          disableOperations();
         }
 
+        // Display the message
         displayMessage({
           type: 'Status Check',
           data: result
+        });
+      })
+      .catch(error => {
+        console.error('Status check failed:', error);
+
+        // Reset state
+        selectedSubnetId = null;
+        subnets = {};
+
+        // Update UI for disconnected state
+        hideAllBadges();
+        disableOperations();
+
+        // Display error
+        displayMessage({
+          type: 'Error',
+          error: error.message || 'Failed to get status'
         });
       });
   });
 
   // Set up subnet action handlers
   document.getElementById('get-balance').addEventListener('click', () => {
-    getBalance()
+    if (!selectedSubnetId) {
+      displayMessage({
+        type: 'Error',
+        error: 'No subnet selected'
+      });
+      return;
+    }
+
+    // Get the subnet data
+    const subnetData = subnets[selectedSubnetId];
+    if (!subnetData) {
+      displayMessage({
+        type: 'Error',
+        error: 'Selected subnet data not found'
+      });
+      return;
+    }
+
+    // Get the signer address if available
+    const signerAddress = subnetData.signer;
+
+    // Call getBalance with the subnet ID
+    getBalance(selectedSubnetId, signerAddress)
       .then(result => {
         displayMessage({
           type: 'Get Balance',
           data: result
         });
 
-        // If we have active subnet balance, show it in connection badge
-        if (activeSubnet && result[activeSubnet]) {
-          const connectionBadge = document.getElementById('connection-badge');
-          connectionBadge.textContent = `${activeSubnet}: ${result[activeSubnet]}`;
-        }
+        // Update the connection badge to show balance
+        const connectionBadge = document.getElementById('connection-badge');
+        const balance = Object.values(result)[0] || 0;
+        const tokenShort = subnetData.token.split('::')[1] || 'tokens';
+        connectionBadge.textContent = `Balance: ${balance} ${tokenShort}`;
       })
       .catch(error => {
         displayMessage({
@@ -148,12 +200,20 @@ function init() {
   });
 
   document.getElementById('get-all-balances').addEventListener('click', () => {
+    // Get balances across all subnets - no subnet parameter needed
     getBalances()
       .then(result => {
         displayMessage({
           type: 'Get All Balances',
           data: result
         });
+
+        // Update the connection badge to show summary of balances if we have results
+        if (Object.keys(result).length > 0) {
+          const connectionBadge = document.getElementById('connection-badge');
+          const totalSubnets = Object.keys(result).length;
+          connectionBadge.textContent = `Balances from ${totalSubnets} subnet${totalSubnets !== 1 ? 's' : ''}`;
+        }
       })
       .catch(error => {
         displayMessage({
@@ -170,6 +230,14 @@ function init() {
   });
 
   document.getElementById('submit-transfer').addEventListener('click', () => {
+    if (!selectedSubnetId) {
+      displayMessage({
+        type: 'Error',
+        error: 'No subnet selected'
+      });
+      return;
+    }
+
     const to = document.getElementById('transfer-to').value;
     const amount = parseFloat(document.getElementById('transfer-amount').value);
 
@@ -181,7 +249,7 @@ function init() {
       return;
     }
 
-    createTransfer({ to, amount, subnet: activeSubnet, nonce: Date.now() })
+    createTransfer({ subnetId: selectedSubnetId, to, amount, nonce: Date.now() })
       .then(result => {
         displayMessage({
           type: 'Create Transfer',
@@ -189,9 +257,9 @@ function init() {
         });
 
         // Clear form
-        document.getElementById('transfer-to').value = '';
-        document.getElementById('transfer-amount').value = '';
-        document.querySelector('.transfer-form').style.display = 'none';
+        // document.getElementById('transfer-to').value = '';
+        // document.getElementById('transfer-amount').value = '';
+        // document.querySelector('.transfer-form').style.display = 'none';
       })
       .catch(error => {
         displayMessage({
@@ -201,30 +269,55 @@ function init() {
       });
   });
 
-  // Perform initial extension check on app startup
-  console.log('Performing initial extension check...');
-  checkExtensionInstalled()
-    .then(result => {
-      console.log('Initial extension check result:', result);
-      extensionAvailable = result.installed;
-      updateStatus();
-      displayMessage({
-        type: 'Initial Extension Check',
-        data: result
-      });
+  // Perform initial extension check on app startup with a delay
+  console.log('Scheduling initial extension check...');
 
-      // Just log that extension is available
-      if (result.installed) {
-        console.log('Extension is available - click "Get Status" to connect');
-      }
-    })
-    .catch(error => {
-      console.error('Initial extension check failed:', error);
-      displayMessage({
-        type: 'Error',
-        error: error.message
+  // First show a loading message
+  displayMessage({
+    type: 'Initializing',
+    message: 'Starting Signet SDK demo...'
+  });
+
+  // Delay for UX - gives the page time to render before permission prompt
+  setTimeout(() => {
+    console.log('Performing initial extension check...');
+
+    // First check if extension is installed
+    checkExtensionInstalled()
+      .then(result => {
+        console.log('Initial extension check result:', result);
+        extensionAvailable = result.installed;
+        updateStatus();
+        displayMessage({
+          type: 'Initial Extension Check',
+          data: result
+        });
+
+        // If extension is available, automatically get status after a short delay
+        if (result.installed) {
+          console.log('Extension is available - getting status...');
+
+          // Message to user
+          displayMessage({
+            type: 'Connection',
+            message: 'Extension detected! Getting Signet status...'
+          });
+
+          // Small delay before getting status to avoid UI jank
+          setTimeout(() => {
+            // Simulate click on get-status button
+            document.getElementById('get-status').click();
+          }, 1000);
+        }
+      })
+      .catch(error => {
+        console.error('Initial extension check failed:', error);
+        displayMessage({
+          type: 'Error',
+          error: error.message
+        });
       });
-    });
+  }, 500);
 }
 
 // Update the extension status badge
@@ -239,6 +332,142 @@ function updateStatus() {
     statusElement.classList.remove('success');
     statusElement.classList.add('error');
   }
+}
+
+// Update UI based on subnet data
+function updateUI(subnetId, subnetData) {
+  if (!subnetId || !subnetData) {
+    hideAllBadges();
+    return;
+  }
+
+  console.log('Updating UI for subnet:', subnetId);
+
+  // Update connection badge
+  const connectionBadge = document.getElementById('connection-badge');
+  connectionBadge.style.display = 'inline-block';
+
+  // Show token in connection badge if available
+  if (subnetData.token) {
+    const tokenShort = subnetData.token.split('::')[1] || subnetData.token;
+    connectionBadge.textContent = `Connected: ${tokenShort}`;
+  } else {
+    connectionBadge.textContent = `Connected: ${subnetId.split('.')[1] || subnetId}`;
+  }
+
+  // Update signer badge if available
+  if (subnetData.signer) {
+    const shortenedSigner = subnetData.signer.slice(0, 5) + '...' + subnetData.signer.slice(-4);
+
+    const signerBadge = document.getElementById('signer-badge');
+    if (signerBadge) {
+      signerBadge.textContent = `Signer: ${shortenedSigner}`;
+      signerBadge.style.display = 'inline-block';
+      signerBadge.classList.remove('outline');
+      signerBadge.classList.add('success');
+    }
+
+    // Also update balance badge to show subnet
+    const balanceBadge = document.getElementById('balance-badge');
+    if (balanceBadge) {
+      balanceBadge.textContent = `Subnet: ${subnetId.split('.')[1] || subnetId}`;
+      balanceBadge.style.display = 'inline-block';
+    }
+  }
+
+  // Update subnet operations title with token info
+  if (subnetData.token) {
+    const subnetActionsTitle = document.querySelector('#subnet-actions .panel-title');
+    if (subnetActionsTitle) {
+      const tokenShort = subnetData.token.split('::')[1] || subnetData.token;
+      subnetActionsTitle.textContent = `Get Balance (${tokenShort})`;
+    }
+  }
+}
+
+// Hide all status badges
+function hideAllBadges() {
+  document.getElementById('connection-badge').style.display = 'none';
+  document.getElementById('balance-badge').style.display = 'none';
+
+  const signerBadge = document.getElementById('signer-badge');
+  if (signerBadge) {
+    signerBadge.style.display = 'none';
+  }
+
+  // Reset subnet operations title
+  const subnetActionsTitle = document.querySelector('#subnet-actions .panel-title');
+  if (subnetActionsTitle) {
+    subnetActionsTitle.textContent = 'Get Balance';
+  }
+
+  // Update all balances title 
+  const allBalancesTitle = document.querySelector('#all-balances-actions .panel-title');
+  if (allBalancesTitle) {
+    allBalancesTitle.textContent = 'Get All Balances';
+  }
+}
+
+// Enable operation buttons and panels
+function enableOperations(enable = true) {
+  console.log('Enable operations:', enable);
+
+  const subnetButtons = document.querySelectorAll('#subnet-actions button');
+  const allBalancesButtons = document.querySelectorAll('#all-balances-actions button');
+  const transferButtons = document.querySelectorAll('#transfer-actions button');
+
+  // Update panels
+  const subnetActionsPanel = document.getElementById('subnet-actions');
+  const allBalancesPanel = document.getElementById('all-balances-actions');
+  const transferActionsPanel = document.getElementById('transfer-actions');
+
+  if (enable) {
+    subnetActionsPanel.classList.add('enabled');
+    allBalancesPanel.classList.add('enabled');
+    transferActionsPanel.classList.add('enabled');
+  } else {
+    subnetActionsPanel.classList.remove('enabled');
+    allBalancesPanel.classList.remove('enabled');
+    transferActionsPanel.classList.remove('enabled');
+  }
+
+  // Update subnet buttons
+  subnetButtons.forEach(button => {
+    if (enable) {
+      button.removeAttribute('disabled');
+      button.classList.remove('disabled');
+    } else {
+      button.setAttribute('disabled', 'disabled');
+      button.classList.add('disabled');
+    }
+  });
+
+  // Update all balances buttons - these can be enabled even if no specific subnet is selected
+  allBalancesButtons.forEach(button => {
+    if (enable) {
+      button.removeAttribute('disabled');
+      button.classList.remove('disabled');
+    } else {
+      button.setAttribute('disabled', 'disabled');
+      button.classList.add('disabled');
+    }
+  });
+
+  // Update transfer buttons
+  transferButtons.forEach(button => {
+    if (enable) {
+      button.removeAttribute('disabled');
+      button.classList.remove('disabled');
+    } else {
+      button.setAttribute('disabled', 'disabled');
+      button.classList.add('disabled');
+    }
+  });
+}
+
+// Disable all operations
+function disableOperations() {
+  enableOperations(false);
 }
 
 // Display a message in the log panel

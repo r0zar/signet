@@ -6,7 +6,6 @@ import type {
     Transfer,
     Prediction,
     ClaimReward,
-    Status,
     TransactionResult,
     TransferMessage
 } from './types';
@@ -15,6 +14,7 @@ import { Mempool } from './mempool';
 import { buildDepositTxOptions, buildWithdrawTxOptions } from './utils';
 import { createWelshDomain, createTransferMessage } from './signatures';
 import { getCurrentAccount } from './wallet';
+import type { Status } from '~shared/context/types';
 
 export class Subnet {
     subnet: `${string}.${string}`;
@@ -22,11 +22,9 @@ export class Subnet {
     signer: string;
     balances: Map<string, number> = new Map();
     mempool: Mempool;
-    lastProcessedBlock: number;
 
     constructor(subnetContract: `${string}.${string}` = WELSH) {
         this.signer = '';
-        this.lastProcessedBlock = 0
         this.subnet = subnetContract;
 
         this.tokenIdentifier = subnetTokens[this.subnet as keyof typeof subnetTokens];
@@ -60,20 +58,31 @@ export class Subnet {
         return this.mempool.getQueue().length > 0;
     }
 
+    /**
+     * Discard a transaction from the mempool by its signature
+     * @param signature The signature of the transaction to discard
+     * @returns True if the transaction was found and removed, false otherwise
+     */
+    public discardTransaction(signature: string): boolean {
+        return this.mempool.discardTransactionBySignature(signature);
+    }
+
     public getStatus(): Status {
         return {
             subnet: this.subnet,
+            signer: this.signer,
+            token: this.tokenIdentifier,
             txQueue: this.mempool.getQueue(),
-            lastProcessedBlock: this.lastProcessedBlock,
         };
     }
 
     /**
      * Fetch a user's on-chain balance from the contract
      */
-    private async fetchContractBalance(user: string): Promise<number> {
+    async fetchContractBalance(user: string): Promise<number> {
         const [contractAddress, contractName] = this.subnet.split('.');
         try {
+            console.log({ contractAddress, contractName, user })
             const result = await fetchCallReadOnlyFunction({
                 contractAddress,
                 contractName,
@@ -121,8 +130,9 @@ export class Subnet {
     /**
      * Get a user's complete balance information
      */
-    async getBalance(user?: string): Promise<number> {
+    async getBalance(user: string): Promise<number> {
         const address = user || this.signer;
+        console.log('Getting balance for:', address);
         return this.mempool.getBalance(address);
     }
 
@@ -151,20 +161,7 @@ export class Subnet {
     }
 
     public async processTxRequest(txRequest: TransactionRequest) {
-        // Validate based on transaction type
-        switch (txRequest.type) {
-            case TransactionType.TRANSFER:
-                await this.validateTransferOperation(txRequest as Transfer);
-                break;
-            case TransactionType.PREDICT:
-                await this.validatePredictionOperation(txRequest as Prediction);
-                break;
-            case TransactionType.CLAIM_REWARD:
-                await this.validateClaimOperation(txRequest as ClaimReward);
-                break;
-            default:
-                throw new Error(`Unknown transaction type: ${txRequest.type}`);
-        }
+        // TODO: VALIDATE SIGNATURES
 
         // Create a new Transaction object and put it in the queue
         const transaction = new Transaction(txRequest);
@@ -172,63 +169,46 @@ export class Subnet {
     }
 
     /**
-     * Process transactions from the mempool and mine a new block
-     * Groups transactions by type and processes each group separately
-     * @param batchSize Optional number of transactions to process (default: up to 200)
+     * Mine a single transaction by its signature
+     * @param signature The signature of the transaction to mine
      * @returns Transaction result containing the txid if successful
+     * @throws Error if the transaction is not found or mining fails
      */
-    public async mineBlock(batchSize?: number): Promise<TransactionResult> {
-        const queue = this.mempool.getQueue();
+    public async mineSingleTransaction(signature: string): Promise<TransactionResult> {
+        // Find the transaction in the mempool
+        const transaction = this.mempool.findTransactionBySignature(signature);
 
-        // Don't process if queue is empty
-        if (queue.length === 0) {
-            throw new Error('No transactions to mine');
+        if (!transaction) {
+            throw new Error(`Transaction with signature ${signature} not found in mempool`);
         }
 
-        // Group transactions by type
-        const txByType = this.mempool.getTransactionsByType();
-        const maxBatchSize = batchSize || 200;
+        // Get the contract info for this subnet
+        const [contractAddress, contractName] = this.subnet.split('.');
 
-        // Process each type of transaction separately
-        for (const [txType, txs] of txByType.entries()) {
-            if (txs.length === 0) continue;
-
-            // Get the contract info for this transaction type
-            const [contractAddress, contractName] = this.subnet.split('.');
-
-            if (!contractAddress || !contractName) {
-                console.error(`Invalid contract format for ${txType}`);
-                continue;
-            }
-
-            // Get transactions to mine (up to batch size)
-            const txsToMine = txs.slice(0, maxBatchSize);
-
-            // Build transaction options
-            const txOptions = this.mempool.buildBatchTxOptions(
-                txsToMine,
-                txType,
-                contractAddress,
-                contractName,
-            );
-
-            try {
-                // Execute the batch transaction
-                console.log(`Mining ${txType} transactions:`, txsToMine.length);
-                const result = await this.executeTransaction(txOptions);
-
-                // Remove the processed transactions from the mempool
-                this.mempool.removeTransactions(txsToMine);
-
-                // Return after processing one batch - we can process more in the next mine call
-                return result;
-            } catch (error) {
-                console.error(`Failed to mine ${txType} transactions:`, error);
-                // Continue with next transaction type
-            }
+        if (!contractAddress || !contractName) {
+            throw new Error(`Invalid contract format: ${this.subnet}`);
         }
 
-        throw new Error('Failed to mine any transactions');
+        // Build transaction options for single transaction
+        const txOptions = this.mempool.buildSingleTxOptions(
+            transaction,
+            contractAddress,
+            contractName
+        );
+
+        try {
+            // Execute the transaction
+            console.log(`Mining single transaction of type ${transaction.type} with signature ${signature}`);
+            const result = await this.executeTransaction(txOptions);
+
+            // Remove the transaction from the mempool
+            this.mempool.removeTransactions([transaction]);
+
+            return result;
+        } catch (error) {
+            console.error(`Failed to mine transaction with signature ${signature}:`, error);
+            throw error;
+        }
     }
 
     async deposit(amount: number) {
@@ -273,7 +253,7 @@ export class Subnet {
         }
     }
 
-    async generateSignature(message: TransferMessage): Promise<string> {
+    async generateTransferSignature(message: TransferMessage): Promise<string> {
         // Get the active account from wallet
         const activeAccount = await getCurrentAccount();
 
@@ -363,46 +343,6 @@ export class Subnet {
         const isValid = await this.verifyTransferSignature(operation);
         if (!isValid) {
             throw new Error('Invalid transfer operation: signature verification failed');
-        }
-    }
-
-    async validatePredictionOperation(operation: Prediction): Promise<void> {
-        if (!operation.signature) {
-            throw new Error('Invalid prediction operation: missing required fields');
-        }
-        if (operation.amount <= 0) {
-            throw new Error('Invalid prediction operation: amount must be positive');
-        }
-        if (operation.nonce <= 0) {
-            throw new Error('Invalid prediction operation: nonce must be positive');
-        }
-        if (operation.marketId < 0 || operation.outcomeId < 0) {
-            throw new Error('Invalid prediction operation: market/outcome IDs must be positive');
-        }
-
-        // Verify signature using the same method as transfers
-        // since predictions use the same token transfer signature
-        const isValid = await this.verifyTransferSignature(operation);
-        if (!isValid) {
-            throw new Error('Invalid prediction operation: signature verification failed');
-        }
-    }
-
-    async validateClaimOperation(operation: ClaimReward): Promise<void> {
-        if (!operation.signature) {
-            throw new Error('Invalid claim operation: missing required fields');
-        }
-        if (operation.nonce <= 0) {
-            throw new Error('Invalid claim operation: nonce must be positive');
-        }
-        if (operation.receiptId <= 0) {
-            throw new Error('Invalid claim operation: receipt ID must be positive');
-        }
-
-        // Verify claim signature with the receipt verification function
-        const isValid = await this.verifyClaimSignature(operation);
-        if (!isValid) {
-            throw new Error('Invalid claim operation: signature verification failed');
         }
     }
 

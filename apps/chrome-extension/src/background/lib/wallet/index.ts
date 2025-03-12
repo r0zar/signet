@@ -17,7 +17,10 @@ import {
   getActiveAccount,
   deleteAccount,
   clearWalletData,
-  walletPassword
+  walletPassword,
+  hasValidWalletSession,
+  getWalletSessionPassword,
+  clearWalletSession
 } from './storage';
 
 import {
@@ -45,6 +48,40 @@ export async function initializeWallet(password: string): Promise<boolean> {
  */
 export async function checkWalletInitialized(): Promise<boolean> {
   return await isWalletInitialized();
+}
+
+/**
+ * Check if there's a valid session that can be used to auto-login
+ */
+export async function hasActiveSession(): Promise<boolean> {
+  return await hasValidWalletSession();
+}
+
+/**
+ * Try to initialize the wallet using the active session (if exists)
+ * Returns true if successful, false if there's no valid session or if initialization failed
+ */
+export async function initializeFromSession(): Promise<boolean> {
+  // Check if there's a valid wallet session
+  if (!await hasValidWalletSession()) {
+    return false;
+  }
+
+  // Get the session password
+  const password = await getWalletSessionPassword();
+  if (!password) {
+    return false;
+  }
+
+  // Initialize secure storage with the password
+  return await initializeSecureStorage(password);
+}
+
+/**
+ * End the current wallet session (logout)
+ */
+export async function endSession(): Promise<boolean> {
+  return await clearWalletSession();
 }
 
 /**

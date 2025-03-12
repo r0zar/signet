@@ -13,10 +13,16 @@ export type MessageAction =
   | "refreshBalances"
   | "mineBlock"
   | "mineAllPendingBlocks"
+  | "mineSingleTransaction"
+  | "mineBatchTransactions"
+  | "discardTransaction"
   | "setSigner"
   // Wallet related actions
   | "initializeWallet"
   | "checkWalletInitialized"
+  | "hasActiveWalletSession"
+  | "initializeFromSession"
+  | "endWalletSession"
   | "createSeedPhrase"
   | "importSeedPhrase"
   | "getAllSeedPhrases"
@@ -52,6 +58,7 @@ export interface Account {
 // Transaction interfaces
 export interface TransactionRequest {
   type: string;
+  subnetId: string;
   signature: string;
   signer: string;
   nonce: number;
@@ -80,9 +87,10 @@ export interface TransactionResult {
 }
 
 export interface Status {
-  subnet: string;
-  txQueue: any[];
-  lastProcessedBlock?: number;
+  subnet: `${string}.${string}`;
+  signer: string;
+  token: string;
+  txQueue: any[]; // Using any instead of Transaction to avoid circular dependency
 }
 
 // Basic response structure

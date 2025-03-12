@@ -12,19 +12,14 @@ export enum MessageType {
   // Status and discovery operations
   CHECK_EXTENSION_INSTALLED = 'check_extension_installed',
   GET_STATUS = 'get_status',
-  
-  // System operations (for compatibility)
-  LOG = 'log',
-  ERROR = 'error',
-  
+
   // Subnet operations
   GET_BALANCE = 'get_balance',
   GET_BALANCES = 'get_balances',
-  MINE_BLOCK = 'mine_block',
-  MINE_ALL_PENDING_BLOCKS = 'mine_all_pending_blocks',
-  
+
   // Transaction operations
-  CREATE_TRANSFER_TX = 'create_transfer_tx'
+  CREATE_TRANSFER_TX = 'create_transfer_tx',
+  SIGN_PREDICTION = 'sign_prediction'
 }
 
 /**
@@ -33,20 +28,20 @@ export enum MessageType {
 export interface Message<T = unknown> {
   id: string
   timestamp: string
-  
+
   // Message classification using enum
   type: MessageType
-  
+
   // Origin for security
   origin?: string
-  
+
   // Type-safe data payload
   data: T
-  
+
   // Request/response handling
   request?: boolean
   response?: string
-  
+
   // Error handling
   error?: {
     code: string
@@ -165,8 +160,8 @@ export function send<T>(message: Partial<Message<T>> & { type: MessageType }): M
  * Send a message and wait for a response
  */
 export async function request<TRequest, TResponse = unknown>(
-  message: Partial<Message<TRequest>> & { type: MessageType }, 
-  timeoutMs = 5000
+  message: Partial<Message<TRequest>> & { type: MessageType },
+  timeoutMs = 0
 ): Promise<Message<TResponse>> {
   const finalMessage = prepareMessage<TRequest>({
     ...message,
@@ -176,7 +171,7 @@ export async function request<TRequest, TResponse = unknown>(
   const responsePromise = new Promise<Message<TResponse>>((resolve, reject) => {
     // Set up timeout to reject the promise if no response is received (unless timeoutMs is 0)
     let timeoutId: NodeJS.Timeout | null = null;
-    
+
     if (timeoutMs > 0) {
       timeoutId = setTimeout(() => {
         pendingResponses.delete(finalMessage.id)
@@ -185,9 +180,9 @@ export async function request<TRequest, TResponse = unknown>(
     }
 
     // Store promise resolution functions and timeout ID
-    pendingResponses.set(finalMessage.id, { 
-      resolve: resolve as any, 
-      reject, 
+    pendingResponses.set(finalMessage.id, {
+      resolve: resolve as any,
+      reject,
       timeoutId: timeoutId as any // Cast needed for compatibility with existing type 
     })
   })
@@ -203,7 +198,7 @@ export async function request<TRequest, TResponse = unknown>(
  * Send a response to a message
  */
 export function respond<T>(
-  originalMessage: Message<any>, 
+  originalMessage: Message<any>,
   data?: T,
   error?: { code: string; message: string; details?: unknown }
 ): Message<T> {
@@ -236,7 +231,7 @@ export function subscribe<T = unknown>(
         return;
       }
     }
-    
+
     callback(message as Message<T>);
   };
 

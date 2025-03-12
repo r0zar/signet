@@ -25,7 +25,7 @@ export class Transaction implements BaseTransaction {
         // Set affected users based on transaction type
         if (this.type === TransactionType.TRANSFER) {
             const transfer = data as Transfer;
-            this.affectedUsers = [transfer.signer, transfer.to];
+            this.affectedUsers = [data.signer, transfer.to];
         } else {
             // For other types, only the signer is affected
             this.affectedUsers = [data.signer];
@@ -77,7 +77,7 @@ export class Transaction implements BaseTransaction {
                         signature: Cl.bufferFromHex(prediction.signature),
                         nonce: Cl.uint(prediction.nonce)
                     }),
-                    market_id: Cl.uint(prediction.marketId),
+                    market_id: Cl.stringAscii(prediction.marketId),
                     outcome_id: Cl.uint(prediction.outcomeId),
                     amount: Cl.uint(prediction.amount)
                 });

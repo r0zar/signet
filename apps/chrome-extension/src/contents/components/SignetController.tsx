@@ -21,7 +21,6 @@ import { PermissionsTab } from './tabs/PermissionsTab';
 interface Status {
   subnet: string;
   txQueue: any[];
-  lastProcessedBlock?: number;
 }
 
 /**
@@ -103,8 +102,8 @@ function MinimizedButton({
       onClick={onClick}
       style={{
         position: 'fixed',
-        top: '15px',
-        left: '15px',
+        top: '12px',
+        left: '14px',
         width: '40px',
         height: '40px',
         borderRadius: '50%',
@@ -181,14 +180,32 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
     refreshStatus();
   }, []);
 
-  // Navigate to previous tab
+  // Get the active account from context
+  const { currentAccount } = useSignetContext();
+  const hasActiveAccount = isWalletInitialized && currentAccount && currentAccount.stxAddress;
+
+  // Navigate to previous tab - disable certain tabs if no account is active
   const goToPreviousTab = () => {
-    setActiveTab(prev => (prev === 0 ? 4 : prev - 1));
+    let newTab = activeTab === 0 ? 4 : activeTab - 1;
+
+    // If trying to navigate to Transfer or Mempool tab with no account, skip to previous
+    // if (!hasActiveAccount && (newTab === 2 || newTab === 3)) {
+    //   newTab = newTab === 2 ? 1 : 0;
+    // }
+
+    setActiveTab(newTab);
   }
 
-  // Navigate to next tab
+  // Navigate to next tab - disable certain tabs if no account is active
   const goToNextTab = () => {
-    setActiveTab(prev => (prev === 4 ? 0 : prev + 1));
+    let newTab = activeTab === 4 ? 0 : activeTab + 1;
+
+    // If trying to navigate to Transfer or Mempool tab with no account, skip to next
+    // if (!hasActiveAccount && (newTab === 2 || newTab === 3)) {
+    //   newTab = newTab === 2 ? 4 : 4;
+    // }
+
+    setActiveTab(newTab);
   }
 
   // Render tab content based on active tab
@@ -199,8 +216,88 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
       case 1: // Wallet tab
         return <WalletTab />;
       case 2: // Transfer tab
+        if (!hasActiveAccount) {
+          return (
+            <div style={{
+              padding: '20px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '200px',
+              color: colors.steel,
+              textAlign: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔐</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: colors.cyber }}>
+                Account Required
+              </div>
+              <div style={{ fontSize: '12px' }}>
+                Please set up and activate an account in the WALLET tab before using transfers.
+              </div>
+              <motion.button
+                onClick={() => setActiveTab(1)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  marginTop: '8px',
+                  padding: '8px 16px',
+                  background: 'rgba(125, 249, 255, 0.1)',
+                  border: '1px solid rgba(125, 249, 255, 0.4)',
+                  borderRadius: '4px',
+                  color: colors.cyber,
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Go to Wallet
+              </motion.button>
+            </div>
+          );
+        }
         return <TransferTab />;
       case 3: // Mempool tab
+        if (!hasActiveAccount) {
+          return (
+            <div style={{
+              padding: '20px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '200px',
+              color: colors.steel,
+              textAlign: 'center',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔐</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: colors.cyber }}>
+                Account Required
+              </div>
+              <div style={{ fontSize: '12px' }}>
+                Please set up and activate an account in the WALLET tab to view the mempool.
+              </div>
+              <motion.button
+                onClick={() => setActiveTab(1)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  marginTop: '8px',
+                  padding: '8px 16px',
+                  background: 'rgba(125, 249, 255, 0.1)',
+                  border: '1px solid rgba(125, 249, 255, 0.4)',
+                  borderRadius: '4px',
+                  color: colors.cyber,
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Go to Wallet
+              </motion.button>
+            </div>
+          );
+        }
         return <MempoolTab />;
       case 4: // Permissions tab
         return <PermissionsTab />;
@@ -270,7 +367,7 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
           ◀
         </motion.button>
 
-        {/* Tab Title */}
+        {/* Tab Title - show lock icon for disabled tabs */}
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: -10 }}
@@ -281,10 +378,16 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
             color: colors.cyber,
             fontSize: '12px',
             fontWeight: 'bold',
-            letterSpacing: '1px'
+            letterSpacing: '1px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px'
           }}
         >
           {tabTitles[activeTab]}
+          {!hasActiveAccount && (activeTab === 2 || activeTab === 3) && (
+            <span style={{ fontSize: '10px', color: 'rgba(125, 249, 255, 0.5)' }}>🔒</span>
+          )}
         </motion.div>
 
         {/* Next Tab Button */}

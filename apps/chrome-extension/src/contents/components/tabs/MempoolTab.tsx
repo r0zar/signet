@@ -1,23 +1,25 @@
 /**
- * MempoolTab - Visualizes pending transactions in the mempool and enables mining
+ * MempoolTab - Visualizes pending transactions in the mempool with expanded view and action controls
  */
 
 import { useState } from 'react';
 import { useSignetContext } from '~shared/context/SignetContext';
 import { colors } from '../../../shared/styles/theme';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { txTypeContracts } from '~background/lib';
 
 // Helper interface for Status
 interface Status {
   subnet: string;
   txQueue: any[];
-  lastProcessedBlock?: number;
 }
 
 export function MempoolTab() {
-  const { status, isLoading, refreshStatus, mineAllPendingBlocks } = useSignetContext();
-  const [isMining, setIsMining] = useState(false);
-  const [activeView, setActiveView] = useState<'list' | 'mining'>('list');
+  const { status, isLoading, refreshStatus, discardTransaction, mineSingleTransaction, mineBatchTransactions } = useSignetContext();
+  const [expandedTxIds, setExpandedTxIds] = useState<string[]>([]);
+  const [processingTxs, setProcessingTxs] = useState<string[]>([]);
+  const [selectedTxIds, setSelectedTxIds] = useState<string[]>([]);
+  const [isBatchMining, setIsBatchMining] = useState(false);
 
   // Collect transactions from all subnets
   const allTxs = getAllTransactions(status);
@@ -27,31 +29,189 @@ export function MempoolTab() {
   function getAllTransactions(status: Record<string, Status> | null): Array<any> {
     if (!status) return [];
 
+    // Create a counter to ensure unique IDs even with duplicate tx data
+    let uniqueCounter = 0;
+
     // Flatten all txQueues from all subnets into a single array
     return Object.entries(status).flatMap(([subnetId, subnetStatus]) => {
       // Add subnet identifier to each transaction
-      return (subnetStatus.txQueue || []).map(tx => ({
-        ...tx,
-        ...tx.data,
-        subnetId,
-        subnetName: subnetStatus.subnet.split('.')[1] // Extract subnet name
-      }));
+      return (subnetStatus.txQueue || []).map(tx => {
+        uniqueCounter++;
+        return {
+          ...tx,
+          ...tx.data,
+          subnetId,
+          subnetName: subnetStatus.subnet.split('.')[1], // Extract subnet name
+          // Create truly unique ID for transaction using counter and more reliable properties
+          id: `${tx.type || 'tx'}-${tx.nonce || uniqueCounter}-${subnetId}-${uniqueCounter}`
+        };
+      });
     });
   }
 
-  // Handle mining all pending transactions
-  const handleMineAll = async () => {
-    if (txQueueSize > 0) {
-      setIsMining(true);
-      try {
-        await mineAllPendingBlocks();
-        // Refresh status after mining
+  // Toggle expanded state for a transaction
+  const toggleExpandTx = (txId: string) => {
+    // Close all others and open just this one (prevents multiple expanding)
+    setExpandedTxIds(prev =>
+      prev.includes(txId) ? [] : [txId]
+    );
+  };
+
+  // Toggle selection of a transaction
+  const toggleSelectTx = (e: React.MouseEvent, txId: string) => {
+    e.stopPropagation(); // Prevent expanding/collapsing when selecting
+
+    setSelectedTxIds(prev =>
+      prev.includes(txId)
+        ? prev.filter(id => id !== txId)
+        : [...prev, txId]
+    );
+  };
+
+  // Toggle select all transactions
+  const toggleSelectAll = () => {
+    if (selectedTxIds.length === allTxs.length) {
+      // If all are selected, unselect all
+      setSelectedTxIds([]);
+    } else {
+      // Otherwise, select all
+      setSelectedTxIds(allTxs.map(tx => tx.id));
+    }
+  };
+
+  // Discard a transaction from the mempool
+  const discard = async (txId: string) => {
+    // Find the transaction by ID in our local allTxs collection
+    const tx = allTxs.find(tx => tx.id === txId);
+    if (!tx || !tx.signature) {
+      console.error("Transaction not found or missing signature:", txId);
+      return;
+    }
+
+    // Mark as processing
+    setProcessingTxs(prev => [...prev, txId]);
+
+    // Remove from selection
+    setSelectedTxIds(prev => prev.filter(id => id !== txId));
+
+    try {
+      // Call the API to remove from mempool using transaction's signature
+      const result = await discardTransaction(tx.signature, tx.subnetId);
+
+      if (result.success) {
+        console.log(`Successfully discarded transaction from: ${result.removedFrom.join(', ')}`);
+        // Refresh the status to update UI
         await refreshStatus();
-      } catch (error) {
-        console.error("Mining error:", error);
-      } finally {
-        setIsMining(false);
+      } else {
+        console.error("Failed to discard transaction, not found in any subnet");
       }
+    } catch (error) {
+      console.error("Error discarding transaction:", error);
+    } finally {
+      // Remove from processing state
+      setProcessingTxs(prev => prev.filter(id => id !== txId));
+    }
+  };
+
+  // Mine a single transaction
+  const mineTransaction = async (txId: string) => {
+    // Find the transaction by ID in our local allTxs collection
+    const tx = allTxs.find(tx => tx.id === txId);
+    if (!tx || !tx.signature) {
+      console.error("Transaction not found or missing signature:", txId);
+      return;
+    }
+
+    // Mark as processing
+    setProcessingTxs(prev => [...prev, txId]);
+
+    try {
+      // this is a work in progress, but we are detecting the "subnet" from the transaction type...
+      const subnetId = txTypeContracts[tx.type].contract;
+
+      // Call the API to mine the transaction using its signature
+      const result = await mineSingleTransaction(tx.signature, subnetId);
+
+      if (result.success) {
+        console.log(`Successfully mined transaction with txid: ${result.txid} on subnet: ${result.subnet}`);
+      } else {
+        console.error(`Failed to mine transaction: ${result.error}`);
+      }
+
+      // Refresh the mempool after mining
+      await refreshStatus();
+    } catch (error) {
+      console.error("Mining error:", error);
+    } finally {
+      // Remove from processing and selection state
+      setProcessingTxs(prev => prev.filter(id => id !== txId));
+      setSelectedTxIds(prev => prev.filter(id => id !== txId));
+    }
+  };
+
+  // Mine selected transactions in batch
+  const mineBatch = async () => {
+    if (selectedTxIds.length === 0) return;
+
+    // Collect signatures for all selected transactions
+    const signatures: string[] = [];
+    const missingSignatures: string[] = [];
+
+    // Find all transactions and collect their signatures
+    for (const txId of selectedTxIds) {
+      const tx = allTxs.find(tx => tx.id === txId);
+      if (tx && tx.signature) {
+        signatures.push(tx.signature);
+      } else {
+        missingSignatures.push(txId);
+        console.warn(`Transaction ${txId} not found or missing signature`);
+      }
+    }
+
+    // If no valid signatures, abort
+    if (signatures.length === 0) {
+      console.error("No valid transactions to mine");
+      return;
+    }
+
+    // Mark batch mining state
+    setIsBatchMining(true);
+    // Mark all selected transactions as processing
+    setProcessingTxs(prev => [...prev, ...selectedTxIds]);
+
+    try {
+      // Call the API to mine these transactions as a batch
+      const result = await mineBatchTransactions(signatures);
+
+      if (result.success) {
+        // Success info by subnet
+        let mineCount = 0;
+        let totalMined = 0;
+
+        // Show results by subnet
+        Object.entries(result.results).forEach(([subnetId, subnetResult]) => {
+          const { success, count, error } = subnetResult;
+          if (success && count > 0) {
+            console.log(`Successfully mined ${count} transaction(s) on ${subnetId}`);
+            totalMined += count;
+          } else if (error) {
+            console.error(`Error mining on ${subnetId}: ${error}`);
+          }
+        });
+
+        console.log(`Batch mining completed: ${totalMined}/${signatures.length} transactions mined`);
+      } else {
+        console.error("Failed to mine any transactions in batch");
+      }
+
+      // Refresh the mempool after mining
+      await refreshStatus();
+    } catch (error) {
+      console.error("Batch mining error:", error);
+    } finally {
+      setIsBatchMining(false);
+      setProcessingTxs(prev => prev.filter(id => !selectedTxIds.includes(id)));
+      setSelectedTxIds([]);
     }
   };
 
@@ -60,272 +220,403 @@ export function MempoolTab() {
       padding: '8px 0',
       display: 'flex',
       flexDirection: 'column',
-      height: '290px'
+      maxHeight: '640px'
     }}>
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: 'column',
         marginBottom: '12px',
-        padding: '0 8px'
+        padding: '0 12px',
+        gap: '8px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '14px', color: colors.cyber, fontWeight: 'bold' }}>
-            Pending Transactions: {txQueueSize}
-          </span>
-          
-          {/* Tab Toggle Buttons */}
-          {txQueueSize > 0 && (
-            <div style={{ 
-              display: 'flex', 
-              background: 'rgba(1, 4, 9, 0.5)',
-              borderRadius: '4px',
-              border: '1px solid rgba(125, 249, 255, 0.2)',
-              overflow: 'hidden'
-            }}>
-              <button
-                onClick={() => setActiveView('list')}
+        {/* Header row with title and refresh button */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px', color: colors.cyber, fontWeight: 'bold' }}>
+              Signed Messages: {txQueueSize}
+            </span>
+          </div>
+
+          <motion.button
+            onClick={refreshStatus}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: colors.steel,
+              cursor: 'pointer',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <motion.span
+              animate={isLoading ? { rotate: [0, 360] } : {}}
+              transition={{ duration: 1, repeat: isLoading ? Infinity : 0, ease: 'linear' }}
+            >
+              ↻
+            </motion.span>
+            Refresh
+          </motion.button>
+        </div>
+
+        {/* Action bar with selection controls and batch mine button */}
+        {txQueueSize > 0 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'rgba(1, 4, 9, 0.5)',
+            padding: '6px 10px',
+            borderRadius: '4px',
+            border: '1px solid rgba(125, 249, 255, 0.2)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Select all checkbox */}
+              <div
+                onClick={toggleSelectAll}
                 style={{
-                  background: activeView === 'list' ? 'rgba(125, 249, 255, 0.1)' : 'transparent',
-                  color: activeView === 'list' ? colors.cyber : colors.steel,
-                  border: 'none',
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  cursor: 'pointer',
-                  borderRight: '1px solid rgba(125, 249, 255, 0.1)'
-                }}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setActiveView('mining')}
-                style={{
-                  background: activeView === 'mining' ? 'rgba(125, 249, 255, 0.1)' : 'transparent',
-                  color: activeView === 'mining' ? colors.cyber : colors.steel,
-                  border: 'none',
-                  fontSize: '10px',
-                  padding: '2px 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
                   cursor: 'pointer'
                 }}
               >
-                Mining
-              </button>
+                <div style={{
+                  width: '14px',
+                  height: '14px',
+                  border: `1px solid ${selectedTxIds.length > 0 ? colors.cyber : colors.steel}`,
+                  borderRadius: '2px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  background: selectedTxIds.length > 0 ? 'rgba(125, 249, 255, 0.1)' : 'transparent'
+                }}>
+                  {selectedTxIds.length === allTxs.length && allTxs.length > 0 ? (
+                    <span style={{ color: colors.cyber, fontSize: '10px' }}>✓</span>
+                  ) : selectedTxIds.length > 0 ? (
+                    <span style={{ color: colors.cyber, fontSize: '10px' }}>-</span>
+                  ) : null}
+                </div>
+                <span style={{
+                  fontSize: '11px',
+                  color: selectedTxIds.length > 0 ? colors.cyber : colors.steel
+                }}>
+                  {selectedTxIds.length === 0
+                    ? 'Select All'
+                    : `${selectedTxIds.length} selected`
+                  }
+                </span>
+              </div>
             </div>
-          )}
-        </div>
 
-        <motion.button
-          onClick={refreshStatus}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: colors.steel,
-            cursor: 'pointer',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-        >
-          <motion.span
-            animate={isLoading ? { rotate: [0, 360] } : {}}
-            transition={{ duration: 1, repeat: isLoading ? Infinity : 0, ease: 'linear' }}
-          >
-            ↻
-          </motion.span>
-          Refresh
-        </motion.button>
+            {/* Batch mining action button */}
+            <motion.button
+              onClick={mineBatch}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={selectedTxIds.length === 0 || isBatchMining}
+              style={{
+                background: selectedTxIds.length === 0
+                  ? 'rgba(1, 4, 9, 0.4)'
+                  : 'rgba(125, 249, 255, 0.1)',
+                border: `1px solid ${selectedTxIds.length === 0
+                  ? 'rgba(125, 249, 255, 0.1)'
+                  : 'rgba(125, 249, 255, 0.3)'}`,
+                borderRadius: '4px',
+                padding: '4px 10px',
+                color: selectedTxIds.length === 0 ? colors.steel : colors.cyber,
+                fontSize: '11px',
+                cursor: selectedTxIds.length === 0 ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {isBatchMining ? (
+                <motion.span
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                >
+                  ⚙️
+                </motion.span>
+              ) : (
+                <span style={{ fontSize: '13px' }}>⛏️</span>
+              )}
+              <span>
+                Batch Mine {selectedTxIds.length > 0 ? `(${selectedTxIds.length})` : ''}
+              </span>
+            </motion.button>
+          </div>
+        )}
       </div>
 
       {/* Transaction List View */}
-      {(activeView === 'list' || txQueueSize === 0) && (
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          scrollbarWidth: 'thin',
-          scrollbarColor: `${colors.cyber} rgba(1, 4, 9, 0.5)`,
-        }}>
-          {txQueueSize === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        scrollbarWidth: 'thin',
+        scrollbarColor: `${colors.cyber} rgba(1, 4, 9, 0.5)`,
+      }}>
+        {txQueueSize === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '24px 16px',
+              height: '210px',
+              gap: '16px'
+            }}
+          >
+            {/* Empty mempool illustration */}
+            <motion.div
+              animate={{
+                y: [0, -8, 0],
+                opacity: [0.6, 1, 0.6]
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: 'easeInOut'
+              }}
               style={{
+                position: 'relative',
+                width: '80px',
+                height: '80px',
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
                 justifyContent: 'center',
-                padding: '24px 16px',
-                height: '210px',
-                gap: '16px'
+                alignItems: 'center',
               }}
             >
-              {/* Empty mempool illustration */}
+              {/* Outer ring */}
               <motion.div
-                animate={{ 
-                  y: [0, -8, 0],
-                  opacity: [0.6, 1, 0.6]
-                }}
-                transition={{ 
-                  duration: 4, 
-                  repeat: Infinity, 
-                  ease: 'easeInOut' 
-                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
                 style={{
-                  position: 'relative',
+                  position: 'absolute',
                   width: '80px',
                   height: '80px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {/* Outer ring */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-                  style={{
-                    position: 'absolute',
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    border: `1px dashed ${colors.cyber}30`,
-                    boxShadow: `0 0 20px ${colors.cyber}20 inset`
-                  }}
-                />
-                
-                {/* Middle ring */}
-                <motion.div
-                  animate={{ rotate: -180 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  style={{
-                    position: 'absolute',
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    border: `1px dashed ${colors.cyber}50`
-                  }}
-                />
-                
-                {/* Icon in center */}
-                <div style={{
-                  width: '24px',
-                  height: '24px',
                   borderRadius: '50%',
-                  background: `radial-gradient(circle, ${colors.cyber}30 0%, transparent 70%)`,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  color: colors.cyber,
-                  fontSize: '16px'
-                }}>
-                  ⚡
-                </div>
-              </motion.div>
-              
-              {/* Text content */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <div style={{
-                  color: colors.white,
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  textAlign: 'center'
-                }}>
-                  Mempool Empty
-                </div>
-                <div style={{
-                  color: colors.steel,
-                  fontSize: '12px',
-                  textAlign: 'center',
-                  maxWidth: '240px',
-                  lineHeight: '1.5'
-                }}>
-                  Transactions will appear here when they're ready to be mined into the blockchain
-                </div>
-              </div>
-              
-              {/* Refresh button */}
-              <motion.button
-                whileHover={{ scale: 1.05, background: `rgba(125, 249, 255, 0.15)` }}
-                whileTap={{ scale: 0.95 }}
-                onClick={refreshStatus}
-                style={{
-                  marginTop: '8px',
-                  background: 'rgba(125, 249, 255, 0.08)',
-                  border: '1px solid rgba(125, 249, 255, 0.3)',
-                  borderRadius: '4px',
-                  padding: '6px 14px',
-                  color: colors.cyber,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
+                  border: `1px dashed ${colors.cyber}30`,
+                  boxShadow: `0 0 20px ${colors.cyber}20 inset`
                 }}
-              >
-                <motion.span
-                  animate={isLoading ? { rotate: [0, 360] } : {}}
-                  transition={{ duration: 1, repeat: isLoading ? Infinity : 0, ease: 'linear' }}
-                >
-                  ↻
-                </motion.span>
-                Refresh
-              </motion.button>
+              />
+
+              {/* Middle ring */}
+              <motion.div
+                animate={{ rotate: -180 }}
+                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  position: 'absolute',
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  border: `1px dashed ${colors.cyber}50`
+                }}
+              />
+
+              {/* Icon in center */}
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${colors.cyber}30 0%, transparent 70%)`,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: colors.cyber,
+                fontSize: '16px'
+              }}>
+                ⚡
+              </div>
             </motion.div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 8px' }}>
-              {allTxs.map((tx, index) => (
+
+            {/* Text content */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <div style={{
+                color: colors.white,
+                fontSize: '14px',
+                fontWeight: 'bold',
+                textAlign: 'center'
+              }}>
+                Mempool Empty
+              </div>
+              <div style={{
+                color: colors.steel,
+                fontSize: '12px',
+                textAlign: 'center',
+                maxWidth: '240px',
+                lineHeight: '1.5'
+              }}>
+                Signed messages will appear here when they're ready to be settled on-chain
+              </div>
+            </div>
+
+            {/* Refresh button */}
+            <motion.button
+              whileHover={{ scale: 1.05, background: `rgba(125, 249, 255, 0.15)` }}
+              whileTap={{ scale: 0.95 }}
+              onClick={refreshStatus}
+              style={{
+                marginTop: '8px',
+                background: 'rgba(125, 249, 255, 0.08)',
+                border: '1px solid rgba(125, 249, 255, 0.3)',
+                borderRadius: '4px',
+                padding: '6px 14px',
+                color: colors.cyber,
+                fontSize: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <motion.span
+                animate={isLoading ? { rotate: [0, 360] } : {}}
+                transition={{ duration: 1, repeat: isLoading ? Infinity : 0, ease: 'linear' }}
+              >
+                ↻
+              </motion.span>
+              Refresh
+            </motion.button>
+          </motion.div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 12px' }}>
+            {allTxs.map((tx) => {
+              const isExpanded = expandedTxIds.includes(tx.id);
+              const isProcessing = processingTxs.includes(tx.id);
+
+              return (
                 <motion.div
-                  key={`${tx.type}-${tx.nonce}-${index}`}
+                  key={tx.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
                   style={{
-                    background: 'rgba(1, 4, 9, 0.6)',
-                    border: '1px solid rgba(125, 249, 255, 0.2)',
+                    border: `1px solid ${isExpanded
+                      ? 'rgba(125, 249, 255, 0.4)'
+                      : selectedTxIds.includes(tx.id)
+                        ? 'rgba(125, 249, 255, 0.35)'
+                        : 'rgba(125, 249, 255, 0.2)'
+                      }`,
                     borderRadius: '4px',
                     padding: '8px 12px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    background: selectedTxIds.includes(tx.id)
+                      ? 'rgba(125, 249, 255, 0.05)'
+                      : 'rgba(1, 4, 9, 0.6)',
                   }}
+                  onClick={() => !isProcessing && toggleExpandTx(tx.id)}
                 >
+                  {/* Processing overlay */}
+                  {isProcessing && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(1, 4, 9, 0.7)',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      zIndex: 10
+                    }}>
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <div style={{
+                          color: colors.cyber,
+                          fontSize: '18px'
+                        }}>⚙️</div>
+                      </motion.div>
+                    </div>
+                  )}
+
+                  {/* Transaction header - always visible */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     marginBottom: '4px',
-                    fontSize: '11px'
+                    fontSize: '11px',
+                    alignItems: 'center'
                   }}>
-                    <div>
-                      <span style={{ color: colors.cyber, textTransform: 'uppercase' }}>
-                        {tx.type}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {/* Selection checkbox */}
+                      <div
+                        onClick={(e) => toggleSelectTx(e, tx.id)}
+                        style={{
+                          width: '14px',
+                          height: '14px',
+                          border: `1px solid ${selectedTxIds.includes(tx.id) ? colors.cyber : colors.steel}`,
+                          borderRadius: '2px',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          background: selectedTxIds.includes(tx.id) ? 'rgba(125, 249, 255, 0.1)' : 'transparent',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {selectedTxIds.includes(tx.id) && (
+                          <span style={{ color: colors.cyber, fontSize: '10px' }}>✓</span>
+                        )}
+                      </div>
+
+                      <div>
+                        <span style={{ color: colors.cyber, textTransform: 'uppercase' }}>
+                          {tx.type}
+                        </span>
+                        <span style={{
+                          color: '#FFAA00',
+                          fontSize: '9px',
+                          marginLeft: '4px',
+                          opacity: 0.9,
+                          background: 'rgba(255, 170, 0, 0.1)',
+                          padding: '1px 4px',
+                          borderRadius: '2px'
+                        }}>
+                          {tx.subnetName}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ color: colors.steel }}>
+                        Nonce: {tx.nonce}
                       </span>
                       <span style={{
-                        color: '#FFAA00',
-                        fontSize: '9px',
-                        marginLeft: '4px',
-                        opacity: 0.9,
-                        background: 'rgba(255, 170, 0, 0.1)',
-                        padding: '1px 4px',
-                        borderRadius: '2px'
+                        color: isExpanded ? colors.cyber : colors.steel,
+                        transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
                       }}>
-                        {tx.subnetName}
+                        ▼
                       </span>
                     </div>
-                    <span style={{ color: colors.steel }}>
-                      Nonce: {tx.nonce}
-                    </span>
                   </div>
 
+                  {/* Basic transaction info - always visible */}
                   {tx.type === 'transfer' && (
                     <div style={{ fontSize: '11px', color: '#FFFFFF' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
                         <div>From: <span style={{ color: colors.steel }}>
-                          {tx.signer && typeof tx.signer === 'string' 
+                          {tx.signer && typeof tx.signer === 'string'
                             ? `${tx.signer.slice(0, 6)}...${tx.signer.slice(-4)}`
                             : 'Unknown'}
                         </span></div>
@@ -370,120 +661,132 @@ export function MempoolTab() {
                       </div>
                     </div>
                   )}
+
+                  {/* Expanded content - only visible when expanded */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{ marginTop: '10px' }}
+                      >
+                        {/* Divider */}
+                        <div style={{
+                          height: '1px',
+                          background: 'rgba(125, 249, 255, 0.15)',
+                          margin: '8px 0'
+                        }} />
+
+                        {/* Additional transaction details */}
+                        <div style={{ fontSize: '11px', color: colors.steel, marginBottom: '10px' }}>
+                          <div style={{ marginBottom: '4px' }}>
+                            <span style={{ color: colors.white }}>Full Signer:</span> {tx.signer}
+                          </div>
+                          {tx.to && (
+                            <div style={{ marginBottom: '4px' }}>
+                              <span style={{ color: colors.white }}>Full Recipient:</span> {tx.to}
+                            </div>
+                          )}
+                          <div style={{ marginBottom: '4px' }}>
+                            <span style={{ color: colors.white }}>Subnet ID:</span> {tx.subnetId}
+                          </div>
+                          {tx.data && (
+                            <div>
+                              <span style={{ color: colors.white }}>Raw Data:</span>
+                              <pre style={{
+                                background: 'rgba(1, 4, 9, 0.4)',
+                                padding: '6px',
+                                borderRadius: '4px',
+                                marginTop: '4px',
+                                fontSize: '10px',
+                                overflowX: 'auto'
+                              }}>
+                                {JSON.stringify(tx.data, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'flex-end',
+                          gap: '8px',
+                          marginTop: '8px'
+                        }}>
+                          {/* Possible transformations would go here */}
+                          <div style={{
+                            fontSize: '10px',
+                            color: colors.steel,
+                            padding: '4px 8px',
+                            background: 'rgba(1, 4, 9, 0.4)',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(125, 249, 255, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <span>Available actions:</span>
+                          </div>
+
+                          {/* Discard button */}
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              discard(tx.id);
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{
+                              background: 'rgba(255, 78, 78, 0.1)',
+                              border: '1px solid rgba(255, 78, 78, 0.3)',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              color: '#FF4E4E',
+                              fontSize: '10px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            ✕ Discard
+                          </motion.button>
+
+                          {/* Mine button */}
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              mineTransaction(tx.id);
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{
+                              background: 'rgba(125, 249, 255, 0.1)',
+                              border: '1px solid rgba(125, 249, 255, 0.3)',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              color: colors.cyber,
+                              fontSize: '10px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            ⚡ Mine
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Mining View */}
-      {activeView === 'mining' && txQueueSize > 0 && (
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '20px',
-          padding: '0 16px'
-        }}>
-          <div style={{ textAlign: 'center', color: colors.steel, fontSize: '14px' }}>
-            <span>
-              <span style={{ color: colors.cyber, fontWeight: 'bold' }}>{txQueueSize}</span> transactions ready to be mined
-            </span>
+              );
+            })}
           </div>
-
-          <motion.button
-            onClick={handleMineAll}
-            whileHover={{ scale: 1.05, boxShadow: '0 0 15px rgba(125, 249, 255, 0.5)' }}
-            whileTap={{ scale: 0.95 }}
-            disabled={isMining || isLoading}
-            style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(125, 249, 255, 0.2) 0%, rgba(1, 4, 9, 0.5) 100%)',
-              border: `2px solid ${colors.cyber}`,
-              color: colors.cyber,
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: isMining || isLoading ? 'default' : 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxShadow: '0 0 10px rgba(125, 249, 255, 0.3)'
-            }}
-          >
-            {isMining || isLoading ? (
-              <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                style={{ fontSize: '24px' }}
-              >
-                ⚙️
-              </motion.div>
-            ) : (
-              <>
-                <span style={{ fontSize: '24px' }}>⚡</span>
-                <span>MINE ALL</span>
-              </>
-            )}
-          </motion.button>
-
-          <div style={{
-            textAlign: 'center',
-            color: colors.steel,
-            fontSize: '12px',
-            maxWidth: '260px'
-          }}>
-            Mining will process all pending transactions and publish them to the blockchain
-          </div>
-
-          {/* Subnets overview */}
-          {status && Object.keys(status).length > 0 && (
-            <div style={{ 
-              marginTop: '10px',
-              width: '100%', 
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}>
-              <div style={{ fontSize: '11px', color: colors.steel, marginBottom: '2px' }}>Subnets with pending transactions:</div>
-              
-              {Object.entries(status).map(([subnetId, subnetData]) => {
-                const txCount = subnetData.txQueue?.length || 0;
-                if (txCount === 0) return null;
-                
-                return (
-                  <div 
-                    key={subnetId}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '4px 8px',
-                      background: 'rgba(1, 4, 9, 0.4)',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(125, 249, 255, 0.1)',
-                      fontSize: '11px'
-                    }}
-                  >
-                    <span style={{ color: colors.cyber }}>
-                      {subnetData.subnet.split('.')[1]}
-                    </span>
-                    <span style={{ color: '#FFAA00' }}>
-                      {txCount} transaction{txCount !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

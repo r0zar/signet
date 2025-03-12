@@ -12,7 +12,6 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
-  "peerDependencies": {},
   "devDependencies": {
     "@types/node": "^20.11.5",
     "tsup": "^8.0.1",

@@ -9,7 +9,7 @@ import { useEffect, useState } from "react"
 
 export function ConsoleView() {
   // Get state from the context
-  const { messages, status, signer, error } = useSignetContext();
+  const { messages, status, currentAccount, error } = useSignetContext();
   const [logText, setLogText] = useState<string[]>([]);
 
   // Update log text based on state changes
@@ -18,12 +18,12 @@ export function ConsoleView() {
 
     // Add version info
     logs.push('');
-    
+
     // Check for connected subnets
     if (status && Object.keys(status).length > 0) {
       const subnetCount = Object.keys(status).length;
       logs.push(`[SYSTEM] Connected to ${subnetCount} subnet${subnetCount > 1 ? 's' : ''}`);
-      
+
       // List each subnet
       Object.values(status).forEach(subnetStatus => {
         const subnetName = subnetStatus.subnet.split('.')[1];
@@ -34,30 +34,18 @@ export function ConsoleView() {
     }
 
     // Add signer info
-    if (signer) {
-      logs.push(`[SIGNER] ${signer.substring(0, 6)}...${signer.substring(signer.length - 4)}`);
+    if (currentAccount.stxAddress) {
+      logs.push(`[SIGNER] ${currentAccount.stxAddress.substring(0, 6)}...${currentAccount.stxAddress.substring(currentAccount.stxAddress.length - 4)}`);
     } else {
       logs.push('[SIGNER] No active signer');
     }
 
     // Count total pending transactions across all subnets
-    const totalPendingTx = status 
+    const totalPendingTx = status
       ? Object.values(status).reduce((count, subnetStatus) => count + (subnetStatus.txQueue?.length || 0), 0)
       : 0;
-    
-    logs.push(`[MEMPOOL] ${totalPendingTx} transactions pending`);
 
-    // Add latest block info from any subnet
-    if (status) {
-      const lastBlock = Object.values(status)
-        .filter(s => s.lastProcessedBlock)
-        .sort((a, b) => (b.lastProcessedBlock || 0) - (a.lastProcessedBlock || 0))
-        .shift();
-        
-      if (lastBlock?.lastProcessedBlock) {
-        logs.push(`[BLOCK] Last synced: #${lastBlock.lastProcessedBlock}`);
-      }
-    }
+    logs.push(`[MEMPOOL] ${totalPendingTx} transactions pending`);
 
     // Add error info if present
     if (error) {
@@ -78,7 +66,7 @@ export function ConsoleView() {
     }
 
     setLogText(logs);
-  }, [messages, status, signer, error]);
+  }, [messages, status, currentAccount.stxAddress, error]);
 
   return (
     <motion.div

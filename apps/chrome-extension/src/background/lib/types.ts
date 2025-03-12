@@ -29,6 +29,7 @@ export interface TxRequest {
 
 export interface TransactionRequest {
     type: TransactionType;
+    subnetId: string;
     signature: string;
     signer?: string;
     nonce: number;
@@ -36,26 +37,20 @@ export interface TransactionRequest {
 
 export interface Transfer extends TransactionRequest {
     type: TransactionType.TRANSFER;
-    signature: string;
     to: string;
     amount: number;
-    nonce: number;
 }
 
 export interface Prediction extends TransactionRequest {
     type: TransactionType.PREDICT;
-    signature: string;
-    marketId: number;
+    marketId: string;
     outcomeId: number;
     amount: number;
-    nonce: number;
 }
 
 export interface ClaimReward extends TransactionRequest {
     type: TransactionType.CLAIM_REWARD;
-    signature: string;
     receiptId: number;
-    nonce: number;
 }
 
 export interface FinishedTxData {
@@ -64,12 +59,6 @@ export interface FinishedTxData {
 
 export interface TransactionResult {
     txid: string;
-}
-
-export interface Status {
-    subnet: `${string}.${string}`;
-    txQueue: any[]; // Using any instead of Transaction to avoid circular dependency
-    lastProcessedBlock?: number;
 }
 
 export interface TransferMessage {

@@ -1,0 +1,69 @@
+name: Publish Signet SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/signet-sdk/**'
+      - '.github/workflows/sdk-release.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release type (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8.15.6
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK
+        run: pnpm --filter signet-sdk build
+
+      - name: Update version
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          cd packages/signet-sdk
+          npm version ${{ github.event.inputs.version }} -m "Release %s"
+
+      - name: Publish to NPM
+        run: |
+          cd packages/signet-sdk
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push tags
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git push --follow-tags

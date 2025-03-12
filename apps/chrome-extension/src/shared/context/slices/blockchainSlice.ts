@@ -1,37 +1,38 @@
 import { useState } from 'react'
-import { type Message } from 'signet-sdk/src/messaging'
 import { assets } from '../../../background/lib/constants'
-import { type Status, type TransactionResult } from '../types'
+import type { Status, TransactionResult, Transfer } from '../types'
 import { sendMessage } from '../utils'
 
-export interface SubnetState {
+export interface BlockchainState {
   status: Record<string, Status> | null
   isLoading: boolean
   error: string | null
-  signer: string | null
 }
 
-export interface SubnetActions {
-  getAssetBalances: () => Promise<Record<string, number>>
+export interface BlockchainActions {
+  // Subnet operations
+  getAssetBalances: (address?: string) => Promise<Record<string, number>>
   getBalance: (address?: string) => Promise<Record<string, number>>
   getBalances: () => Promise<Record<string, Record<string, number>>>
   deposit: (amount: number, subnetId: string) => Promise<TransactionResult>
   withdraw: (amount: number, subnetId: string) => Promise<TransactionResult>
-  mineBlock: (subnetId: string, batchSize?: number) => Promise<TransactionResult>
-  mineAllPendingBlocks: (batchSize?: number) => Promise<Record<string, TransactionResult>>
   refreshBalances: (address?: string) => Promise<void>
-  setSigner: (address: string) => Promise<void>
   refreshStatus: () => Promise<Record<string, Status>>
+
+  // Transaction operations
+  createTransfer: (to: string, amount: number, nonce: number, subnetId: string) => Promise<Transfer>
+  discardTransaction: (signature: string, subnetId?: string) => Promise<{ success: boolean, removedFrom: string[] }>
+  mineSingleTransaction: (signature: string, subnetId?: string) => Promise<{ success: boolean, txid?: string, subnet?: string, error?: string }>
+  mineBatchTransactions: (signatures: string[]) => Promise<{ success: boolean, results: Record<string, any> }>
 }
 
-export type SubnetSlice = SubnetState & SubnetActions
+export type BlockchainSlice = BlockchainState & BlockchainActions
 
-export function useSubnetSlice(): SubnetSlice {
+export function useBlockchainSlice(signer: string | null = null): BlockchainSlice {
   // Initialize state
   const [status, setStatus] = useState<Record<string, Status>>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [signer, setSigner] = useState<string | null>(null)
 
   // Status fetching
   const refreshStatus = async (): Promise<Record<string, Status>> => {
@@ -51,31 +52,16 @@ export function useSubnetSlice(): SubnetSlice {
     }
   }
 
-  // Signer operations
-  const updateSigner = async (address: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await sendMessage("setSigner", { address });
-      setSigner(address);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to set signer";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  // Note: Signer is now managed by the wallet slice
 
   // Asset operations
-  const getAssetBalances = async (): Promise<Record<string, number>> => {
+  const getAssetBalances = async (address?: string): Promise<Record<string, number>> => {
     setIsLoading(true);
     setError(null);
 
     try {
       // Get balances from all subnets
-      const subnetBalances = await sendMessage<Record<string, number>>("getBalance");
+      const subnetBalances = await sendMessage<Record<string, number>>("getBalance", { address: address || signer });
 
       // Convert to asset balances using the assets mapping
       const assetBalances: Record<string, number> = {};
@@ -98,7 +84,7 @@ export function useSubnetSlice(): SubnetSlice {
   };
 
   // Balance operations
-  const getBalance = async (address?: string): Promise<Record<string, number>> => {
+  const getBalance = async (address: string): Promise<Record<string, number>> => {
     setIsLoading(true);
     setError(null);
 
@@ -174,15 +160,28 @@ export function useSubnetSlice(): SubnetSlice {
     }
   }
 
-  // Mining operations
-  const mineBlock = async (subnetId: string, batchSize?: number): Promise<TransactionResult> => {
+  // Transaction operations
+  const createTransfer = async (to: string, amount: number, nonce: number, subnetId: string): Promise<Transfer> => {
     setIsLoading(true);
     setError(null);
 
+    if (!signer) {
+      setError("No signer set");
+      setIsLoading(false);
+      throw new Error("No signer set");
+    }
+
     try {
-      return await sendMessage<TransactionResult>("mineBlock", { subnetId, batchSize });
+      const result = await sendMessage<{ transaction: Transfer }>("createTransferTx", {
+        to,
+        amount,
+        nonce,
+        signer,
+        subnetId
+      });
+      return result.transaction;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to mine block";
+      const errorMessage = err instanceof Error ? err.message : "Failed to create transfer";
       setError(errorMessage);
       throw err;
     } finally {
@@ -190,39 +189,103 @@ export function useSubnetSlice(): SubnetSlice {
     }
   }
 
-  // Mine all pending blocks across subnets
-  const mineAllPendingBlocks = async (batchSize?: number): Promise<Record<string, TransactionResult>> => {
+  /**
+   * Discard a transaction from the mempool by its signature
+   * @param signature The transaction signature to discard
+   * @param subnetId Optional: specific subnet ID to discard from (if not provided, tries all subnets)
+   * @returns Information about successful discard operation
+   */
+  const discardTransaction = async (signature: string, subnetId?: string): Promise<{ success: boolean, removedFrom: string[] }> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      return await sendMessage<Record<string, TransactionResult>>("mineAllPendingBlocks", { batchSize });
+      const result = await sendMessage<{ success: boolean, removedFrom: string[] }>('discardTransaction', {
+        signature,
+        subnetId
+      });
+      return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to mine all pending blocks";
+      const errorMessage = err instanceof Error ? err.message : "Failed to discard transaction";
       setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
+  /**
+   * Mine a single transaction
+   * @param signature The signature of the transaction to mine
+   * @param subnetId Optional subnet ID to mine from
+   * @returns Mining result
+   */
+  const mineSingleTransaction = async (signature: string, subnetId: string): Promise<{
+    success: boolean;
+    txid?: string;
+    subnet?: string;
+    error?: string;
+  }> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await sendMessage<any>('mineSingleTransaction', { signature, subnetId });
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to mine transaction";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Mine a batch of transactions
+   * @param signatures Array of transaction signatures to mine
+   * @returns Mining results by subnet
+   */
+  const mineBatchTransactions = async (signatures: string[]): Promise<{
+    success: boolean;
+    results: Record<string, any>;
+  }> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await sendMessage<any>('mineBatchTransactions', {
+        signatures
+      });
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to mine batch transactions";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return {
     // State
     status,
     isLoading,
     error,
-    signer,
 
-    // Actions
+    // Subnet Actions
     getAssetBalances,
     getBalance,
     getBalances,
     deposit,
     withdraw,
-    mineBlock,
-    mineAllPendingBlocks,
     refreshBalances,
-    setSigner: updateSigner,
-    refreshStatus
+    refreshStatus,
+
+    // Transaction Actions
+    createTransfer,
+    discardTransaction,
+    mineSingleTransaction,
+    mineBatchTransactions
   }
 }

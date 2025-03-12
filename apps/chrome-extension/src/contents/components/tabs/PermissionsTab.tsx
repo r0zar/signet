@@ -31,35 +31,32 @@ interface StoredPermission {
 
 // Helper function to extract parts from a permission key
 function parsePermissionKey(key: string): { origin: string; messageType: string } | null {
-  // Debug log
-  console.log("Parsing key:", key);
-  
   // Split by the first occurrence of "permission:" to handle origins with colons
   const prefix = "permission:";
   if (!key.startsWith(prefix)) {
     console.log("Key does not start with permission:", key);
     return null;
   }
-  
+
   // Remove the prefix
   const remainder = key.substring(prefix.length);
-  
+
   // Find the last colon to separate origin from messageType
   const lastColonIndex = remainder.lastIndexOf(':');
   if (lastColonIndex === -1) {
     console.log("No separator between origin and messageType:", remainder);
     return null;
   }
-  
+
   // Extract origin and messageType
   const origin = remainder.substring(0, lastColonIndex);
   const messageType = remainder.substring(lastColonIndex + 1);
-  
+
   if (!origin || !messageType) {
     console.log("Origin or messageType is empty:", { origin, messageType });
     return null;
   }
-  
+
   const result = { origin, messageType };
   console.log("Successfully parsed:", result);
   return result;
@@ -204,7 +201,7 @@ export function PermissionsTab() {
           color: colors.cyber,
           fontWeight: 'bold'
         }}>
-          SITE PERMISSIONS
+          AUTHORIZATIONS
         </div>
 
         {/* Permission type filters */}
@@ -218,7 +215,7 @@ export function PermissionsTab() {
             fontSize: '10px',
             fontFamily: 'monospace'
           }}>
-            {filteredPermissions.length} permissions
+            {filteredPermissions.length} enabled
           </span>
           <div style={{
             display: 'flex',

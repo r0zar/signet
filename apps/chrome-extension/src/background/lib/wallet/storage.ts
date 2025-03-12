@@ -8,7 +8,11 @@ import type { SeedPhrase, Account, WalletState, CreateAccountOptions } from './t
 // Storage keys
 const WALLET_STATE_KEY = 'wallet_state';
 const WALLET_VERSION_KEY = 'wallet_version';
+const WALLET_SESSION_KEY = 'wallet_session';
 const CURRENT_VERSION = 1;
+
+// Session duration in milliseconds (15 minutes)
+const SESSION_DURATION = 15 * 60 * 1000;
 
 // Regular storage for non-sensitive data
 const regularStorage = new Storage({ area: "local" });
@@ -20,13 +24,21 @@ let secureStorage: SecureStorage | null = null;
 export let walletPassword: string | null = null;
 
 /**
+ * Session data structure for temporary wallet sessions
+ */
+interface WalletSession {
+  password: string;
+  expiresAt: number;
+}
+
+/**
  * Initialize secure storage with a password
  */
 export async function initializeSecureStorage(password: string): Promise<boolean> {
   try {
     secureStorage = new SecureStorage();
     await secureStorage.setPassword(password);
-    
+
     // Store password in memory for account encryption
     walletPassword = password;
 
@@ -48,6 +60,9 @@ export async function initializeSecureStorage(password: string): Promise<boolean
       // Store version
       await regularStorage.set(WALLET_VERSION_KEY, CURRENT_VERSION);
     }
+
+    // Create a session for this login (valid for 15 minutes)
+    await createWalletSession(password);
 
     return true;
   } catch (error) {
@@ -140,7 +155,7 @@ export async function addSeedPhrase(name: string, phrase: string): Promise<SeedP
     if (existingPhrase) {
       throw new Error(`A seed phrase with name "${name}" already exists`);
     }
-    
+
     // Create new seed phrase with unique ID
     const newSeedPhrase: SeedPhrase = {
       id: `seed_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -467,9 +482,121 @@ export async function clearWalletData(): Promise<boolean> {
     // Save empty state
     await saveWalletState(emptyState);
 
+    // Clear any active session
+    await clearWalletSession();
+
     return true;
   } catch (error) {
     console.error("Failed to clear wallet data:", error);
+    return false;
+  }
+}
+
+/**
+ * Create a new wallet session that lasts for 15 minutes
+ */
+export async function createWalletSession(password: string): Promise<boolean> {
+  try {
+    // Create session data
+    const session: WalletSession = {
+      password: password,
+      expiresAt: Date.now() + SESSION_DURATION
+    };
+
+    // Store session data in local storage
+    await regularStorage.set(WALLET_SESSION_KEY, session);
+    return true;
+  } catch (error) {
+    console.error("Failed to create wallet session:", error);
+    return false;
+  }
+}
+
+/**
+ * Check if there's a valid wallet session
+ */
+export async function hasValidWalletSession(): Promise<boolean> {
+  try {
+    const session = await regularStorage.get<WalletSession>(WALLET_SESSION_KEY);
+
+    if (!session) {
+      return false;
+    }
+
+    // Check if session is expired
+    if (Date.now() > session.expiresAt) {
+      // Clean up expired session
+      await clearWalletSession();
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Failed to check wallet session:", error);
+    return false;
+  }
+}
+
+/**
+ * Get the password from a valid session
+ */
+export async function getWalletSessionPassword(): Promise<string | null> {
+  try {
+    const session = await regularStorage.get<WalletSession>(WALLET_SESSION_KEY);
+
+    if (!session) {
+      return null;
+    }
+
+    // Check if session is expired
+    if (Date.now() > session.expiresAt) {
+      // Clean up expired session
+      await clearWalletSession();
+      return null;
+    }
+
+    // Extend session duration when used
+    await extendWalletSession();
+
+    return session.password;
+  } catch (error) {
+    console.error("Failed to get wallet session password:", error);
+    return null;
+  }
+}
+
+/**
+ * Extend the current wallet session by resetting its expiration time
+ */
+export async function extendWalletSession(): Promise<boolean> {
+  try {
+    const session = await regularStorage.get<WalletSession>(WALLET_SESSION_KEY);
+
+    if (!session) {
+      return false;
+    }
+
+    // Update expiration time
+    session.expiresAt = Date.now() + SESSION_DURATION;
+
+    // Save updated session
+    await regularStorage.set(WALLET_SESSION_KEY, session);
+    return true;
+  } catch (error) {
+    console.error("Failed to extend wallet session:", error);
+    return false;
+  }
+}
+
+/**
+ * Clear the current wallet session
+ */
+export async function clearWalletSession(): Promise<boolean> {
+  try {
+    await regularStorage.remove(WALLET_SESSION_KEY);
+    return true;
+  } catch (error) {
+    console.error("Failed to clear wallet session:", error);
     return false;
   }
 }

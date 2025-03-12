@@ -19,11 +19,7 @@ export function LogsTab() {
   useEffect(() => {
     if (!messages) return;
 
-    const uniqueMessages = messages.filter((msg, index, self) =>
-      self.findIndex(m => m.id === msg.id) === index
-    );
-
-    let filtered = [...uniqueMessages];
+    let filtered = [...messages];
 
     // Apply filters
     if (filter === 'request') {

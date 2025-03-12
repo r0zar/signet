@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useEffect, type ReactNode } from 'react'
-import { type Message } from 'signet-sdk/src/messaging'
+import { subscribe, type Message } from 'signet-sdk/src/messaging'
 import type { SignetContextType } from './context-types'
-import { setupMessageSubscriber, useMessagesSlice } from './slices/messagesSlice'
-import { useSubnetSlice } from './slices/subnetSlice'
-import { useTransactionSlice } from './slices/transactionSlice'
+import { useMessagesSlice } from './slices/messagesSlice'
+import { useBlockchainSlice } from './slices/blockchainSlice'
 import { useWalletSlice } from './slices/walletSlice'
 import type { Account, SeedPhrase, Status } from './types'
 
@@ -23,7 +22,6 @@ const defaultContext: SignetContextType = {
   status: null,
   isLoading: false,
   error: null,
-  signer: null,
 
   // Utility operations
   getAssetBalances: async () => { throw new Error("Context not initialized") },
@@ -31,16 +29,16 @@ const defaultContext: SignetContextType = {
   getBalances: async () => { throw new Error("Context not initialized") },
   deposit: async () => { throw new Error("Context not initialized") },
   withdraw: async () => { throw new Error("Context not initialized") },
-  mineBlock: async () => { throw new Error("Context not initialized") },
-  mineAllPendingBlocks: async () => { throw new Error("Context not initialized") },
   refreshBalances: async () => { throw new Error("Context not initialized") },
-  setSigner: async () => { throw new Error("Context not initialized") },
   refreshStatus: async () => { throw new Error("Context not initialized") },
 
   // Transaction operations
   createTransfer: async () => { throw new Error("Context not initialized") },
-  createPrediction: async () => { throw new Error("Context not initialized") },
-  createClaimReward: async () => { throw new Error("Context not initialized") },
+  discardTransaction: async () => { throw new Error("Context not initialized") },
+  mineSingleTransaction: async () => { throw new Error("Context not initialized") },
+  mineBatchTransactions: async () => { throw new Error("Context not initialized") },
+  // createPrediction: async () => { throw new Error("Context not initialized") },
+  // createClaimReward: async () => { throw new Error("Context not initialized") },
 
   // Wallet state
   isWalletInitialized: false,
@@ -60,7 +58,10 @@ const defaultContext: SignetContextType = {
   deleteAccount: async () => { throw new Error("Context not initialized") },
   resetWallet: async () => { throw new Error("Context not initialized") },
   refreshWalletState: async () => { throw new Error("Context not initialized") },
-  checkWalletInitialization: async () => { throw new Error("Context not initialized") }
+  checkWalletInitialization: async () => { throw new Error("Context not initialized") },
+  hasActiveSession: async () => { throw new Error("Context not initialized") },
+  initializeFromSession: async () => { throw new Error("Context not initialized") },
+  endSession: async () => { throw new Error("Context not initialized") },
 }
 
 // Create context
@@ -73,47 +74,32 @@ interface SignetProviderProps {
 
 // The actual provider component
 export function SignetProvider({ children }: SignetProviderProps) {
-  // Initialize subnet slice with the wallet's current account address as initial signer
-  const subnetSlice = useSubnetSlice();
+  // Use the Wallet slice first
+  const walletSlice = useWalletSlice();
 
+  // Initialize blockchain slice with the current account's stxAddress
+  const blockchainSlice = useBlockchainSlice(walletSlice.currentAccount?.stxAddress || null);
 
-  // Use the Wallet slice with a callback to update the subnet slice's signer
-  const walletSlice = useWalletSlice((account: Account | null) => {
-    // This callback gets called when the active account changes
-    if (account) {
-      // Update the signer in the subnet slice
-      subnetSlice.setSigner(account.stxAddress);
-    }
-  });
-
-  // Initialize transaction slice (depends on signer from subnet slice)
-  const transactionSlice = useTransactionSlice(subnetSlice.signer);
-
-  // Initialize message slice with subnet slice for status refresh
-  const messagesSlice = useMessagesSlice(subnetSlice, transactionSlice);
+  // Initialize message slice with blockchain slice for status refresh and operations
+  const messagesSlice = useMessagesSlice(blockchainSlice);
 
   // Setup message subscriber
   useEffect(() => {
     // Subscribe to all messages and handle SDK messages
-    const unsubscribe = setupMessageSubscriber(
-      messagesSlice.addMessage,
-      messagesSlice.handleSDKMessage
-    );
-
+    const unsubscribe = subscribe(messagesSlice.handleSDKMessage);
     // Cleanup on unmount
     return unsubscribe;
   }, []);
 
   // Get initial status and wallet state
   useEffect(() => {
-    subnetSlice.refreshStatus();
+    blockchainSlice.refreshStatus();
     walletSlice.checkWalletInitialization();
   }, []);
 
-  // Create context value by merging all slices
+  // Create context value by merging all slices and adding dynamic signer
   const contextValue: SignetContextType = {
-    ...subnetSlice,
-    ...transactionSlice,
+    ...blockchainSlice,
     ...walletSlice,
     ...messagesSlice
   };

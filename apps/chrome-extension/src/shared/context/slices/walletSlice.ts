@@ -22,6 +22,9 @@ export interface WalletActions {
   resetWallet: () => Promise<boolean>
   refreshWalletState: () => Promise<void>
   checkWalletInitialization: () => Promise<void>
+  hasActiveSession: () => Promise<boolean>
+  initializeFromSession: () => Promise<boolean>
+  endSession: () => Promise<boolean>
 }
 
 export type WalletSlice = WalletState & WalletActions
@@ -47,6 +50,16 @@ export function useWalletSlice(
       if (initialized) {
         // If wallet is initialized, load its state
         await refreshWalletState();
+      } else {
+        // If wallet is not initialized, try to initialize from session
+        const hasSession = await sendMessage<boolean>("hasActiveWalletSession");
+        if (hasSession) {
+          const sessionInitialized = await sendMessage<boolean>("initializeFromSession");
+          if (sessionInitialized) {
+            setIsWalletInitialized(true);
+            await refreshWalletState();
+          }
+        }
       }
     } catch (err) {
       console.error("Error checking wallet initialization:", err);
@@ -336,6 +349,9 @@ export function useWalletSlice(
         if (onAccountChange) {
           onAccountChange(null);
         }
+
+        // End the session
+        await endSession();
       }
 
       return result;
@@ -345,6 +361,49 @@ export function useWalletSlice(
       throw err;
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  // Check if there's an active wallet session
+  const hasActiveSession = async (): Promise<boolean> => {
+    try {
+      return await sendMessage<boolean>("hasActiveWalletSession");
+    } catch (err) {
+      console.error("Error checking active session:", err);
+      return false;
+    }
+  }
+
+  // Initialize wallet from an existing session
+  const initializeFromSession = async (): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await sendMessage<boolean>("initializeFromSession");
+
+      if (result) {
+        setIsWalletInitialized(true);
+        await refreshWalletState();
+      }
+
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to initialize from session";
+      setError(errorMessage);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // End the current wallet session (logout)
+  const endSession = async (): Promise<boolean> => {
+    try {
+      return await sendMessage<boolean>("endWalletSession");
+    } catch (err) {
+      console.error("Error ending session:", err);
+      return false;
     }
   }
 
@@ -367,6 +426,9 @@ export function useWalletSlice(
     deleteAccount,
     resetWallet,
     refreshWalletState,
-    checkWalletInitialization
+    checkWalletInitialization,
+    hasActiveSession,
+    initializeFromSession,
+    endSession
   }
 }

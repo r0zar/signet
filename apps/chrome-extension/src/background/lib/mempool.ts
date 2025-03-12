@@ -11,8 +11,8 @@ export class Mempool {
     private queue: Transaction[] = [];
 
     constructor(
-        private subnet: string, 
-        private balances: Map<string, number>, 
+        private subnet: string,
+        private balances: Map<string, number>,
         private fetchContractBalance: (user: string) => Promise<number>
     ) { }
 
@@ -124,6 +124,23 @@ export class Mempool {
     }
 
     /**
+     * Discard a transaction from the queue by its signature
+     * @param signature The transaction signature to find and remove
+     * @returns True if the transaction was found and removed, false otherwise
+     */
+    discardTransactionBySignature(signature: string): boolean {
+        const initialLength = this.queue.length;
+
+        // Filter out the transaction with the matching signature
+        this.queue = this.queue.filter(tx => {
+            return tx.data.signature !== signature;
+        });
+
+        // Return true if at least one transaction was removed
+        return this.queue.length < initialLength;
+    }
+
+    /**
      * Get the balance for a specific user, including pending transactions
      * @param user User address
      * @returns Balance for the user
@@ -172,5 +189,72 @@ export class Mempool {
             network: STACKS_MAINNET,
             fee
         };
+    }
+
+    /**
+     * Build transaction options for mining a single transaction
+     * Uses the direct 'signed-' function instead of batch processing
+     * @param tx Transaction to mine
+     * @param contractAddress Contract address
+     * @param contractName Contract name
+     * @returns Transaction options for the single transaction operation
+     */
+    buildSingleTxOptions(
+        tx: Transaction,
+        contractAddress: string,
+        contractName: string,
+    ): any {
+        // Get the clarity value for a single transaction
+        const clarityValue = tx.toClarityValue().value;
+
+        // Determine the function name based on transaction type
+        const functionName = `signed-${tx.type}`;
+
+        // Extract the function arguments based on transaction type
+        let functionArgs;
+        switch (tx.type) {
+            case TransactionType.TRANSFER:
+                functionArgs = [
+                    clarityValue.signet,              // signet tuple (signature, nonce)
+                    clarityValue.to,                  // recipient principal
+                    clarityValue.amount               // amount uint
+                ];
+                break;
+            case TransactionType.PREDICT:
+                functionArgs = [
+                    clarityValue.signet,              // signet tuple (signature, nonce)
+                    clarityValue.market_id,           // market ID uint 
+                    clarityValue.outcome_id,          // outcome ID uint
+                    clarityValue.amount               // amount uint
+                ];
+                break;
+            case TransactionType.CLAIM_REWARD:
+                functionArgs = [
+                    clarityValue.signet,              // signet tuple (signature, nonce)
+                    clarityValue.receipt_id           // receipt ID uint
+                ];
+                break;
+            default:
+                throw new Error(`Unsupported transaction type for single mining: ${tx.type}`);
+        }
+
+        // Build transaction options
+        return {
+            contractAddress,
+            contractName,
+            functionName,
+            functionArgs,
+            network: STACKS_MAINNET,
+            fee: 400 // Base fee for a single transaction
+        };
+    }
+
+    /**
+     * Find a transaction by its signature
+     * @param signature Transaction signature to look for
+     * @returns The transaction if found, or undefined if not found
+     */
+    findTransactionBySignature(signature: string): Transaction | undefined {
+        return this.queue.find(tx => tx.data.signature === signature);
     }
 }
