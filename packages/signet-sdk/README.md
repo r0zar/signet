@@ -1,15 +1,15 @@
 # Signet SDK
 
-A unified SDK for interacting with the Signet Chrome extension, with both high-level domain-specific APIs and low-level messaging capabilities.
+A lightweight communication library for interacting with the Signet Chrome extension. This SDK provides a simple messaging system for web applications to seamlessly integrate with Signet's wallet and blockchain capabilities.
 
 ## Features
 
-- Domain-specific APIs for prediction markets and token transfers
-- UI controls for extension interaction
-- Wallet and transaction event subscription
-- Low-level Message class system for custom communications
-- Type-safe API with TypeScript support
-- Backward compatibility with legacy message formats
+- 🔑 **Secure Communication**: Standardized messaging protocol between web apps and the Signet extension
+- 📬 **Type-Safe API**: Complete TypeScript support with type definitions for all operations
+- 🔌 **Extension Detection**: Helpers to detect if Signet is installed and available
+- 💰 **Wallet Integration**: Get balances, create transfers, and manage assets
+- 📝 **Transaction Signing**: Support for transfers and prediction market transactions
+- 🔄 **Async Messaging**: Promise-based request/response system with timeout handling
 
 ## Installation
 
@@ -23,134 +23,176 @@ pnpm add signet-sdk
 
 ## Quick Start
 
-### High-Level API (Recommended)
-
 ```typescript
-import { blaze } from 'signet-sdk';
+import { checkExtensionInstalled, getSignetStatus, getBalance, createTransfer } from 'signet-sdk';
 
-// Connect to the extension
-blaze.connect();
+// Check if the Signet extension is installed
+const checkExtension = async () => {
+  const { installed, version } = await checkExtensionInstalled();
+  
+  if (installed) {
+    console.log(`Signet extension v${version} is installed!`);
+    return true;
+  } else {
+    console.log('Signet extension is not installed');
+    return false;
+  }
+};
 
-// Check wallet status
-const walletInfo = await blaze.getWalletInfo();
-console.log(`Address: ${walletInfo.address}`);
-console.log(`Balance: ${walletInfo.balance}`);
+// Get the status of all subnets
+const checkStatus = async () => {
+  const status = await getSignetStatus();
+  const subnetIds = Object.keys(status);
+  console.log(`Connected to ${subnetIds.length} subnets`);
+  return status;
+};
 
-// Make a market prediction
-const result = await blaze.predict({
-  marketId: 'market-123',
-  marketName: 'Will ETH reach $5000 by EOY?',
-  outcomeId: 1,
-  outcomeName: 'Yes',
-  amount: 100,
-  potentialPayout: 250
-});
+// Check balance on a specific subnet
+const checkBalance = async (subnetId) => {
+  const balances = await getBalance(subnetId);
+  console.log(`Balance on ${subnetId}:`, balances);
+  return balances;
+};
 
-console.log(`Prediction confirmed! Transaction ID: ${result.txId}`);
-
-// Transfer tokens
-const transfer = await blaze.transfer({
-  to: 'ST1234567890ABCDEFGHIJKLMNOPQRSTUV',
-  amount: 50,
-  token: 'WIF',
-  memo: 'For goods and services'
-});
-
-// Subscribe to wallet updates
-const unsubscribe = blaze.onWalletUpdate((walletInfo) => {
-  console.log('Balance updated:', walletInfo.balance);
-});
-
-// Later: unsubscribe when no longer needed
-unsubscribe();
-
-// Change UI appearance
-blaze.setUIOptions({
-  theme: 'dark',
-  accentColor: '#bd93f9',
-  showControls: true
-});
-
-// Toggle extension visibility
-blaze.toggleExtension();
-```
-
-### Low-Level API (For Advanced Use)
-
-```typescript
-import { signetClient, Message } from 'signet-sdk';
-
-// Initialize the client
-signetClient.init();
-
-// Show a notification
-signetClient.showNotification({
-  title: 'Hello World',
-  message: 'This is a test notification',
-  details: 'Additional details here',
-  notificationType: 'SYSTEM'
-});
-
-// Create a custom message
-const message = Message.info('Custom action')
-  .setTarget('app')
-  .setSender('myApp')
-  .setBroadcast(true)
-  .withDetails({ 
-    action: 'customAction',
-    param1: 'value1',
-    param2: 'value2'
+// Create and send a transfer transaction
+const sendTransfer = async (subnetId, to, amount) => {
+  const result = await createTransfer({
+    subnetId,
+    to,
+    amount,
+    nonce: Date.now() // You should get a proper nonce in production
   });
+  
+  if (result.success) {
+    console.log('Transfer successful!', result.transaction);
+  } else {
+    console.error('Transfer failed:', result.error);
+  }
+  
+  return result;
+};
 
-// Post message directly to extension
-window.postMessage(message, '*');
+// Initialize app
+const initApp = async () => {
+  const isInstalled = await checkExtension();
+  if (isInstalled) {
+    const status = await checkStatus();
+    // Continue with app initialization
+  }
+};
+
+initApp();
 ```
 
-## API Documentation
+## Low-Level Messaging API
 
-### BlazeClient
+For advanced use cases, you can use the low-level messaging API:
 
-The `BlazeClient` provides high-level, domain-specific methods:
+```typescript
+import { send, request, subscribe, MessageType } from 'signet-sdk';
 
-- `connect()` - Connect to the Blaze protocol
-- `isConnected()` - Check connection status
-- `getWalletInfo()` - Get current wallet information
-- `transfer(params)` - Transfer tokens
-- `predict(params)` - Make a prediction on a market
-- `claimRewards(predictionId)` - Claim rewards from a successful prediction
-- `setUIOptions(options)` - Customize UI appearance
-- `toggleExtension()` - Toggle extension visibility
-- `onWalletUpdate(callback)` - Subscribe to wallet updates
-- `onTransaction(callback)` - Subscribe to transaction updates
+// Send a message without expecting a response
+send({
+  type: MessageType.GET_STATUS,
+  data: null
+});
 
-### SignetClient
+// Send a message and wait for a response
+const getStatus = async () => {
+  try {
+    const response = await request({
+      type: MessageType.GET_STATUS,
+      data: null
+    }, 5000); // 5 second timeout
+    
+    return response.data;
+  } catch (error) {
+    console.error('Failed to get status:', error);
+    return {};
+  }
+};
 
-The `SignetClient` provides low-level communication:
+// Subscribe to specific message types
+const unsubscribe = subscribe((message) => {
+  console.log('Received message:', message);
+}, { 
+  type: [MessageType.GET_STATUS, MessageType.GET_BALANCE]
+});
 
-- `init()` - Initialize the client
-- `destroy()` - Clean up event listeners
-- `isExtensionAvailable()` - Check if extension is installed
-- `showNotification(options)` - Show a notification
-- `hideNotification()` - Hide the current notification
-- `toggleExtension()` - Toggle extension visibility
-- `show3D(color, duration)` - Show the 3D cube notification
-- `hide3D()` - Hide the 3D cube
-- `changeColor(color)` - Change UI color
+// Later: clean up subscription
+unsubscribe();
+```
 
-### Message Class
+## API Reference
 
-The `Message` class is the core of the communication system:
+### Extension Operations
 
-- `setLevel(level)` - Set message severity level
-- `setTarget(target)` - Set message target component
-- `setSender(sender)` - Set message sender identifier
-- `setBroadcast(broadcast)` - Set broadcast flag
-- `withDetails(details)` - Add structured data
-- `asNotification(options)` - Convert to a notification
+- `checkExtensionInstalled()`: Check if the Signet extension is installed
+- `getSignetStatus()`: Get current status of all connected subnets
 
-Static helpers:
-- `Message.info(content)` - Create an info message
-- `Message.warning(content)` - Create a warning message
-- `Message.error(content)` - Create an error message
-- `Message.debug(content)` - Create a debug message
-- `Message.notification(content, options)` - Create a notification
+### Subnet Operations
+
+- `getBalance(subnetId, address?)`: Get balance for a specific subnet
+- `getBalances()`: Get balances across all subnets
+- `getSubnetIds(status)`: Extract subnet IDs from a status response
+- `getSubnetData(status, subnetId)`: Get data for a specific subnet
+
+### Transaction Operations
+
+- `createTransfer(params)`: Create and execute a transfer transaction
+- `signPrediction(data)`: Sign a prediction market transaction
+
+### Low-Level Messaging
+
+- `send(message)`: Send a message without expecting a response
+- `request(message, timeoutMs?)`: Send a message and wait for a response
+- `respond(originalMessage, data?, error?)`: Send a response to a message
+- `subscribe(callback, filter?)`: Subscribe to incoming messages
+- `cleanup()`: Clean up message listeners and pending responses
+
+## MessageType Enum
+
+The SDK provides a `MessageType` enum for specifying message types:
+
+```typescript
+enum MessageType {
+  // Status and discovery operations
+  CHECK_EXTENSION_INSTALLED = 'check_extension_installed',
+  GET_STATUS = 'get_status',
+
+  // Subnet operations
+  GET_BALANCE = 'get_balance',
+  GET_BALANCES = 'get_balances',
+
+  // Transaction operations
+  CREATE_TRANSFER_TX = 'create_transfer_tx',
+  SIGN_PREDICTION = 'sign_prediction'
+}
+```
+
+## Development
+
+For local development:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Build the SDK
+pnpm build
+
+# Watch mode during development
+pnpm dev
+
+# Run type checking
+pnpm typecheck
+```
+
+## License
+
+MIT
+
+## Related Projects
+
+- [Signet Chrome Extension](https://github.com/yourusername/signet-extension) - Chrome extension for Signet
+- [Signet Demo App](https://github.com/yourusername/signet-demo) - Example app using the Signet SDK
