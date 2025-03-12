@@ -1,5 +1,5 @@
 {
-  "name": "clerk-chrome-extension-demo",
+  "name": "signet",
   "private": true,
   "scripts": {
     "build": "turbo build",
