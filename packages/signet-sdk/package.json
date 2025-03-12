@@ -1,6 +1,6 @@
 {
   "name": "signet-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SDK for interacting with Signet extension using the unified Message class system",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
