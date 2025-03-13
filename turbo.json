@@ -1,37 +1,40 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
-  "tasks": {
+  "globalDependencies": [".env*"],
+  "pipeline": {
     "build": {
       "dependsOn": [
         "^build"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
+      "env": [
+        "NODE_ENV",
+        "VERCEL_URL"
       ],
       "outputs": [
         ".next/**",
-        "!.next/cache/**"
+        "!.next/cache/**",
+        "dist/**"
       ]
     },
     "build:firefox": {
       "dependsOn": [
         "^build:firefox"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
+      "env": [
+        "NODE_ENV"
       ],
       "outputs": [
         ".next/**",
-        "!.next/cache/**"
+        "!.next/cache/**",
+        "dist/**"
       ]
     },
     "lint": {
       "dependsOn": [
         "^lint"
-      ]
+      ],
+      "outputs": []
     },
     "debug": {
       "cache": false,
@@ -45,7 +48,7 @@
       "cache": false,
       "persistent": true
     },
-    "dev:firefoxck": {
+    "dev:firefox": {
       "cache": false,
       "persistent": true
     },
@@ -53,26 +56,26 @@
       "dependsOn": [
         "^package"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
+      "env": [
+        "NODE_ENV"
       ],
       "outputs": [
         ".next/**",
-        "!.next/cache/**"
+        "!.next/cache/**",
+        "dist/**"
       ]
     },
     "package:firefox": {
       "dependsOn": [
         "^package:firefox"
       ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
+      "env": [
+        "NODE_ENV"
       ],
       "outputs": [
         ".next/**",
-        "!.next/cache/**"
+        "!.next/cache/**",
+        "dist/**"
       ]
     }
   }
