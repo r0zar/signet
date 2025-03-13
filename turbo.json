@@ -1,8 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
-  "globalDependencies": [".env*"],
-  "pipeline": {
+  "globalDependencies": [
+    ".env*"
+  ],
+  "tasks": {
     "build": {
       "dependsOn": [
         "^build"
