@@ -99,6 +99,9 @@ function init() {
         // Clear previous subnets and reset selection
         subnets = {};
 
+        // Hide wallet setup alert by default
+        hideWalletSetupAlert();
+
         // Check if we have any subnets
         const subnetIds = getSubnetIds(result);
         const hasSubnets = subnetIds.length > 0;
@@ -123,8 +126,15 @@ function init() {
           // Update UI based on subnet data
           updateUI(selectedSubnetId, subnetData);
 
-          // Enable operations if we have a signer
+          // Check if we have a signer (wallet setup)
           const hasSigner = !!subnetData.signer;
+          
+          if (!hasSigner) {
+            // Show wallet setup alert if no signer is found
+            showWalletSetupAlert();
+          }
+          
+          // Enable operations if we have a signer
           enableOperations(hasSigner);
         } else {
           console.log('No subnets found');
@@ -135,6 +145,11 @@ function init() {
           // Update UI for disconnected state
           hideAllBadges();
           disableOperations();
+          
+          // Show wallet setup alert if extension is available but no subnets/wallet
+          if (extensionAvailable) {
+            showWalletSetupAlert();
+          }
         }
 
         // Display the message
@@ -663,6 +678,22 @@ function initMempoolHandlers() {
           });
         });
     });
+  }
+}
+
+// Show wallet setup alert
+function showWalletSetupAlert() {
+  const alert = document.getElementById('wallet-setup-alert');
+  if (alert) {
+    alert.style.display = 'block';
+  }
+}
+
+// Hide wallet setup alert
+function hideWalletSetupAlert() {
+  const alert = document.getElementById('wallet-setup-alert');
+  if (alert) {
+    alert.style.display = 'none';
   }
 }
 
