@@ -44,7 +44,7 @@ const messageTracker = {
     const badge = document.getElementById('debug-badge');
     if (badge) {
       const total = this.counts.extension + this.counts.status +
-        this.counts.balance + this.counts.transfer + this.counts.mining + 
+        this.counts.balance + this.counts.transfer + this.counts.mining +
         this.counts.custody + this.counts.search;
       badge.textContent = `API Calls: ${total}`;
     }
@@ -264,7 +264,7 @@ function init() {
           type: 'Create Transfer',
           data: result
         });
-        
+
         // Enable request custody if we have a transaction in the response
         if (result.success && result.transaction) {
           // Store transaction properties for search/custody
@@ -277,7 +277,7 @@ function init() {
             amount: parseFloat(amount),
             subnetId: selectedSubnetId
           };
-          
+
           // Show the custody request UI
           const custodyControls = document.getElementById('custody-actions');
           if (custodyControls) {
@@ -467,7 +467,7 @@ function enableOperations(enable = true) {
     allBalancesPanel.classList.remove('enabled');
     transferActionsPanel.classList.remove('enabled');
     custodyActionsPanel.classList.remove('enabled');
-    
+
     // Make sure custody button is disabled
     const custodyButton = document.getElementById('request-custody');
     if (custodyButton) {
@@ -532,11 +532,11 @@ function initMempoolHandlers() {
       // If we have lastTransactionSignature, use that for precise search
       // This shows how an app would find specific transactions it created
       let criteria = {};
-      
+
       if (lastTransactionSignature) {
         // Use the same properties we saved from our last transaction
         criteria = { ...lastTransactionSignature };
-        
+
         // Remove subnetId if present since we pass it separately
         if (criteria.subnetId) {
           delete criteria.subnetId;
@@ -548,7 +548,7 @@ function initMempoolHandlers() {
           criteria.signer = subnetData.signer;
         }
       }
-      
+
       // Search the mempool with these criteria
       searchMempool(criteria, selectedSubnetId)
         .then(result => {
@@ -556,17 +556,17 @@ function initMempoolHandlers() {
             type: 'Search Mempool',
             data: result
           });
-          
+
           // If we found transactions, enable the custody button
           if (result.success && result.transactions && result.transactions.length > 0) {
             // We already have the transaction criteria in lastTransactionSignature
             // No need to modify it from search results since we used it for the search
-            
+
             // If we don't have lastTransactionSignature but found transactions
             if (!lastTransactionSignature) {
               // Store the latest transaction's details for custody request
               const latestTx = result.transactions[0];
-              
+
               // Store transaction properties (except signature which is masked)
               // We'll use a combination of properties to uniquely identify it
               if (latestTx.type === 'transfer') {
@@ -584,14 +584,14 @@ function initMempoolHandlers() {
                 };
               }
             }
-            
+
             // Enable the custody button
             const custodyButton = document.getElementById('request-custody');
             if (custodyButton) {
               custodyButton.removeAttribute('disabled');
               custodyButton.classList.remove('disabled');
             }
-            
+
             const custodyControls = document.getElementById('custody-actions');
             if (custodyControls) {
               custodyControls.classList.add('enabled');
@@ -613,7 +613,7 @@ function initMempoolHandlers() {
         });
     });
   }
-  
+
   // Custody request handler
   const custodyButton = document.getElementById('request-custody');
   if (custodyButton) {
@@ -646,12 +646,12 @@ function initMempoolHandlers() {
           if (result.success) {
             custodyButton.setAttribute('disabled', 'disabled');
             custodyButton.classList.add('disabled');
-            
+
             const custodyControls = document.getElementById('custody-actions');
             if (custodyControls) {
               custodyControls.classList.remove('enabled');
             }
-            
+
             // Clear the transaction criteria
             lastTransactionSignature = null;
           }
