@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "signet-sdk": "workspace:*"
+    "signet-sdk": "^0.1.7"
   },
   "devDependencies": {
     "vite": "^5.0.0"
