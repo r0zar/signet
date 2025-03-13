@@ -128,12 +128,12 @@ function init() {
 
           // Check if we have a signer (wallet setup)
           const hasSigner = !!subnetData.signer;
-          
+
           if (!hasSigner) {
             // Show wallet setup alert if no signer is found
             showWalletSetupAlert();
           }
-          
+
           // Enable operations if we have a signer
           enableOperations(hasSigner);
         } else {
@@ -145,7 +145,7 @@ function init() {
           // Update UI for disconnected state
           hideAllBadges();
           disableOperations();
-          
+
           // Show wallet setup alert if extension is available but no subnets/wallet
           if (extensionAvailable) {
             showWalletSetupAlert();
