@@ -336,61 +336,61 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         // Discard the transaction from the mempool
         response = subnetRegistry.discardTransaction(data.signature, data.subnetId);
         break;
-                
-      // Helper function to check if a transaction matches the criteria
-      function transactionMatchesCriteria(tx: any, criteria: Record<string, any>): boolean {
-        for (const [key, value] of Object.entries(criteria)) {
-          // Try to find the property in both the transaction object and its data property
-          const txValue = tx[key] !== undefined ? tx[key] : 
-                          (tx.data && tx.data[key] !== undefined ? tx.data[key] : undefined);
-          
-          // If property doesn't exist or value doesn't match, no match
-          if (txValue === undefined || txValue !== value) {
-            return false;
+
+        // Helper function to check if a transaction matches the criteria
+        function transactionMatchesCriteria(tx: any, criteria: Record<string, any>): boolean {
+          for (const [key, value] of Object.entries(criteria)) {
+            // Try to find the property in both the transaction object and its data property
+            const txValue = tx[key] !== undefined ? tx[key] :
+              (tx.data && tx.data[key] !== undefined ? tx.data[key] : undefined);
+
+            // If property doesn't exist or value doesn't match, no match
+            if (txValue === undefined || txValue !== value) {
+              return false;
+            }
           }
+          return true;
         }
-        return true;
-      }
-      
-      // Helper function to mask signatures in a transaction copy
-      function createMaskedTransactionCopy(tx: any, subnetId?: string): any {
-        const txCopy = {...tx};
-        
-        // Mask signature in data if it exists
-        if (txCopy.data && txCopy.data.signature) {
-          txCopy.data.signature = "[MASKED]";
+
+        // Helper function to mask signatures in a transaction copy
+        function createMaskedTransactionCopy(tx: any, subnetId?: string): any {
+          const txCopy = { ...tx };
+
+          // Mask signature in data if it exists
+          if (txCopy.data && txCopy.data.signature) {
+            txCopy.data.signature = "[MASKED]";
+          }
+
+          // Mask direct signature if it exists
+          if (txCopy.signature) {
+            txCopy.signature = "[MASKED]";
+          }
+
+          // Add subnet ID if provided
+          if (subnetId) {
+            txCopy.subnetId = subnetId;
+          }
+
+          return txCopy;
         }
-        
-        // Mask direct signature if it exists
-        if (txCopy.signature) {
-          txCopy.signature = "[MASKED]";
-        }
-        
-        // Add subnet ID if provided
-        if (subnetId) {
-          txCopy.subnetId = subnetId;
-        }
-        
-        return txCopy;
-      }
-      
+
       case "searchMempool":
         // Validate input data
         if (!data?.criteria || Object.keys(data.criteria).length === 0) {
           throw new Error("Search criteria are required");
         }
-        
+
         const { criteria, subnetId } = data;
         const subnetIds = subnetRegistry.getSubnetIds();
         const matchingTxs: any[] = [];
-        
+
         // If a specific subnet is provided, only search in that subnet
         if (subnetId && subnetIds.includes(subnetId)) {
           const subnet = subnetRegistry.getSubnet(subnetId);
           if (subnet) {
             // Get all transactions in this subnet's mempool
             const mempoolTxs = subnet.mempool.getQueue();
-            
+
             // Filter transactions based on criteria
             for (const tx of mempoolTxs) {
               if (transactionMatchesCriteria(tx, criteria)) {
@@ -405,7 +405,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
             if (subnet) {
               // Get all transactions in this subnet's mempool
               const mempoolTxs = subnet.mempool.getQueue();
-              
+
               // Filter transactions based on criteria
               for (const tx of mempoolTxs) {
                 if (transactionMatchesCriteria(tx, criteria)) {
@@ -415,20 +415,20 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
             }
           }
         }
-        
+
         // Return matching transactions
         response = {
           success: true,
           transactions: matchingTxs
         };
         break;
-        
+
       case "requestTransactionCustody":
         // Handle both signature-based and criteria-based custody requests
         let custodyTx = null;
         let custodySubnetId = null;
         const allSubnetIds = subnetRegistry.getSubnetIds();
-        
+
         // First try signature-based lookup (for backward compatibility)
         if (data.signature) {
           // Check if a specific subnet is provided
@@ -454,18 +454,18 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
               }
             }
           }
-        } 
+        }
         // Then try criteria-based lookup
         else if (data.criteria && Object.keys(data.criteria).length > 0) {
           const { criteria, subnetId } = data;
-          
+
           // If a specific subnet is provided, only search in that subnet
           if (subnetId && allSubnetIds.includes(subnetId)) {
             const subnet = subnetRegistry.getSubnet(subnetId);
             if (subnet) {
               // Get all transactions in this subnet's mempool
               const mempoolTxs = subnet.mempool.getQueue();
-              
+
               // Find first transaction that matches all criteria
               for (const tx of mempoolTxs) {
                 if (transactionMatchesCriteria(tx, criteria)) {
@@ -482,7 +482,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
               if (subnet) {
                 // Get all transactions in this subnet's mempool
                 const mempoolTxs = subnet.mempool.getQueue();
-                
+
                 // Find first transaction that matches all criteria
                 for (const tx of mempoolTxs) {
                   if (transactionMatchesCriteria(tx, criteria)) {
@@ -491,7 +491,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
                     break;
                   }
                 }
-                
+
                 // If we found a match, no need to check other subnets
                 if (custodyTx) break;
               }
@@ -505,7 +505,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
           };
           break;
         }
-        
+
         // If transaction not found, return error
         if (!custodyTx || !custodySubnetId) {
           response = {
@@ -514,7 +514,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
           };
           break;
         }
-        
+
         // Get the signature for discarding
         const txSignature = custodyTx.data?.signature || custodyTx.signature;
         if (!txSignature) {
@@ -524,14 +524,14 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
           };
           break;
         }
-        
+
         // Transfer custody by discarding the transaction from our mempool
         const discardResult = subnetRegistry.discardTransaction(txSignature, custodySubnetId);
-        
+
         // Return the transaction data along with discard result
         response = {
           success: discardResult.success,
-          transaction: createMaskedTransactionCopy(custodyTx, custodySubnetId),
+          transaction: custodyTx,
           discardedFrom: discardResult.removedFrom
         };
         break;
