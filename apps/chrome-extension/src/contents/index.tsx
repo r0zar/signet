@@ -8,7 +8,12 @@ import { SignetController } from "./components/SignetController"
 import { Notifications } from "./components/Notifications"
 
 export const config: PlasmoCSConfig = {
-  matches: ["<all_urls>"],
+  matches: [
+    "http://localhost:3000/*",
+    "https://bold-sheep-31.clerk.accounts.dev/*",
+    "https://signet-omega.vercel.app/",
+    "https://oppredict.com/*"
+  ],
   all_frames: true
 }
 

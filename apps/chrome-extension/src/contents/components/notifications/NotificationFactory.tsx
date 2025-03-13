@@ -1,8 +1,8 @@
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { MessageType } from 'signet-sdk/src/messaging';
 import { colors } from '~shared/styles/theme';
 import { CustomIcons } from './Icons';
-import { FormattedNotification, PermissionRequest } from './types';
+import type { FormattedNotification, PermissionRequest } from './types';
 import {
   ExtensionCheckContent,
   GetStatusContent,
@@ -10,6 +10,7 @@ import {
   BalancesContent,
   TransferContent,
   TransactionCustodyContent,
+  SearchMempoolContent,
   DefaultPermissionContent
 } from './PermissionContent';
 
@@ -55,7 +56,7 @@ export class NotificationFactory {
           ),
           actions: this.getStandardActions()
         };
-        
+
       case MessageType.GET_BALANCE:
         return {
           title: 'BALANCE REQUEST',
@@ -100,7 +101,7 @@ export class NotificationFactory {
           ),
           actions: this.getStandardActions()
         };
-        
+
       case MessageType.REQUEST_TRANSACTION_CUSTODY:
         return {
           title: 'TRANSACTION CUSTODY REQUEST',
@@ -109,6 +110,21 @@ export class NotificationFactory {
           customIcon: CustomIcons.createTransfer, // Reusing transfer icon
           message: (
             <TransactionCustodyContent
+              origin={permission.origin}
+              rememberCheckbox={rememberCheckbox}
+            />
+          ),
+          actions: this.getStandardActions()
+        };
+        
+      case MessageType.SEARCH_MEMPOOL:
+        return {
+          title: 'MEMPOOL ACCESS REQUEST',
+          type: 'SDK_PERMISSION',
+          color: colors.cyber,
+          customIcon: CustomIcons.searchMempool,
+          message: (
+            <SearchMempoolContent
               origin={permission.origin}
               rememberCheckbox={rememberCheckbox}
             />

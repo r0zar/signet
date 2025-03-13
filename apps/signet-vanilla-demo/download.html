@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Signet Chrome Extension</title>
+  <style>
+    /* Cyberpunk Theme */
+    :root {
+      /* Colors from theme.ts */
+      --cyber: rgb(125, 249, 255);
+      --cyber-dark: rgb(0, 176, 189);
+      --cyber-light: rgb(165, 253, 255);
+      --neon-pink: rgb(218, 47, 183);
+      --neon-purple: rgb(140, 50, 193);
+      --neon-green: rgb(54, 199, 88);
+      --neon-orange: rgb(255, 149, 0);
+      --neon-red: rgb(255, 59, 48);
+      --space-black: rgb(13, 17, 23);
+      --space-dark: rgb(22, 27, 34);
+      --space-gray: rgb(33, 38, 45);
+      --space-void: rgb(1, 4, 9);
+      --steel: rgb(140, 156, 168);
+      --steel-light: rgb(192, 203, 212);
+
+      /* Gradients & Effects */
+      --glow-shadow: 0 0 10px var(--cyber), 0 0 5px rgba(125, 249, 255, 0.3);
+      --panel-bg: linear-gradient(180deg, var(--space-black) 0%, var(--space-void) 100%);
+      --card-bg: rgba(1, 4, 9, 0.8);
+    }
+
+    /* Animations */
+    @keyframes scanLine {
+      0% {
+        transform: translateY(0%);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: translateY(100%);
+        opacity: 0.1;
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes flicker {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      25% {
+        opacity: 0.9;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      75% {
+        opacity: 0.8;
+      }
+    }
+
+    /* Base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--space-void);
+      color: white;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Cyberpunk body effect */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(125, 249, 255, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(218, 47, 183, 0.03) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Scan line effect */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: rgba(125, 249, 255, 0.6);
+      opacity: 0.4;
+      box-shadow: 0 0 10px var(--cyber), 0 0 5px var(--cyber);
+      animation: scanLine 3s linear infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Container styles are applied inline */
+
+    header {
+      border-bottom: 1px solid rgba(125, 249, 255, 0.2);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      color: var(--cyber);
+      position: relative;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100px;
+      height: 2px;
+      background-color: var(--cyber);
+      box-shadow: 0 0 10px var(--cyber), 0 0 5px rgba(125, 249, 255, 0.5);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    h1 span {
+      color: var(--cyber);
+      position: relative;
+    }
+
+    h1 span::after {
+      content: "";
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: var(--cyber);
+      box-shadow: var(--glow-shadow);
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      color: var(--cyber);
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(125, 249, 255, 0.2);
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      color: var(--cyber-light);
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      line-height: 1.6;
+      color: var(--steel-light);
+    }
+
+    .download-btn {
+      display: inline-block;
+      background-color: rgba(125, 249, 255, 0.15);
+      color: var(--cyber);
+      border: 1px solid var(--cyber);
+      border-radius: 4px;
+      padding: 1rem 2rem;
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      margin: 2rem 0;
+      box-shadow: 0 0 8px rgba(125, 249, 255, 0.3);
+    }
+
+    .download-btn::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(125, 249, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .download-btn:hover {
+      background-color: rgba(125, 249, 255, 0.25);
+      box-shadow: 0 0 15px rgba(125, 249, 255, 0.5);
+    }
+
+    .download-btn:hover::after {
+      left: 100%;
+    }
+
+    .version-tag {
+      display: inline-block;
+      background-color: rgba(125, 249, 255, 0.1);
+      color: var(--cyber);
+      border: 1px solid var(--cyber);
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.8rem;
+      margin-left: 1rem;
+      vertical-align: middle;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(125, 249, 255, 0.15);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+    }
+
+    .info-card h3 {
+      margin-top: 0;
+    }
+
+    .info-card:hover {
+      border-color: rgba(125, 249, 255, 0.3);
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .feature-card {
+      background: rgba(22, 27, 34, 0.6);
+      border: 1px solid rgba(125, 249, 255, 0.1);
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--cyber);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-card h3 {
+      color: var(--cyber);
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .installation-steps {
+      counter-reset: step;
+    }
+
+    .step {
+      margin-bottom: 2rem;
+      position: relative;
+      padding-left: 3rem;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background-color: rgba(125, 249, 255, 0.15);
+      border: 1px solid var(--cyber);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: var(--cyber);
+      box-shadow: 0 0 8px rgba(125, 249, 255, 0.2);
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(125, 249, 255, 0.2);
+      margin: 1rem 0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .important-note {
+      background-color: rgba(255, 149, 0, 0.1);
+      border-left: 4px solid var(--neon-orange);
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .warning {
+      background-color: rgba(255, 59, 48, 0.1);
+      border-left: 4px solid var(--neon-red);
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+
+    code {
+      background-color: rgba(33, 38, 45, 0.8);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: var(--cyber-light);
+      border: 1px solid rgba(125, 249, 255, 0.1);
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(125, 249, 255, 0.2);
+      text-align: center;
+      color: var(--steel);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .features {
+        grid-template-columns: 1fr;
+      }
+
+      .installation-steps {
+        padding-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container" style="max-width: 1125px; margin: 0 auto; padding: 2rem;">
+    <header>
+      <h1><span>Signet</span> </h1><span style="color: white; font-size: xx-large;">Signer</span>
+      <p>A secure wallet for connecting to decentralized applications and signing blockchain transactions with subnet
+        compatibility.</p>
+    </header>
+
+    <main>
+      <section>
+        <div class="info-card">
+          <h3>Download Latest Version <span class="version-tag">v0.1.0</span></h3>
+          <p>The Signet extension enables lightning-fast transactions without sacrificing security or decentralization
+            through digital signature-based off-chain scaling.</p>
+          <a href="./public/chrome-mv3-prod.zip" class="download-btn" download>Download Extension</a>
+
+          <div class="warning" style="margin-top: 1.5rem;">
+            <h3>Development Version</h3>
+            <p><strong>Important:</strong> This is a development version intended for testing only. Do not add any real
+              funds to this wallet as new builds may have breaking changes. You can use the extension with sites like <a
+                href="https://oppredict.com"
+                style="color: var(--neon-orange); text-decoration: underline;">oppredict.com</a> without adding funds.
+            </p>
+          </div>
+        </div>
+
+        <div class="features"
+          style="display: flex; flex-wrap: nowrap; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <div class="feature-card"
+            style="min-width: 200px; flex: 1; margin: 0.5rem; transition: transform 0.3s ease; transform-origin: center bottom; will-change: transform;">
+            <h3>⚡ Layer 2 Scaling</h3>
+            <p>Experience web2-like speeds on web3 infrastructure through digital signature verification.</p>
+          </div>
+          <div class="feature-card"
+            style="min-width: 200px; flex: 1; margin: 0.5rem; transition: transform 0.3s ease; transform-origin: center bottom; will-change: transform;">
+            <h3>🔄 Subnet Compatibility</h3>
+            <p>Seamlessly interact with Stacks subnets including Welsh Token and Charisma.</p>
+          </div>
+          <div class="feature-card"
+            style="min-width: 200px; flex: 1; margin: 0.5rem; transition: transform 0.3s ease; transform-origin: center bottom; will-change: transform;">
+            <h3>📝 Off-Chain Transactions</h3>
+            <p>Sign transactions off-chain with secure on-chain settlement for optimal performance.</p>
+          </div>
+          <div class="feature-card"
+            style="min-width: 200px; flex: 1; margin: 0.5rem; transition: transform 0.3s ease; transform-origin: center bottom; will-change: transform;">
+            <h3>🔐 Secure Keys</h3>
+            <p>Your keys never leave your device. All sensitive data is stored locally with encryption.</p>
+          </div>
+        </div>
+
+        <style>
+          .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(125, 249, 255, 0.2);
+          }
+        </style>
+
+        <h2>Installation Guide</h2>
+        <p>Since Signet is currently in development, it needs to be installed manually as an unpacked extension. Follow
+          these steps to get started:</p>
+
+        <div class="installation-steps">
+          <div class="step">
+            <h3>Download the Extension</h3>
+            <p>Click the download button above to get the latest version of the Signet extension (.zip file).</p>
+          </div>
+
+          <div class="step">
+            <h3>Extract the Files</h3>
+            <p>Locate the downloaded ZIP file and extract its contents to a folder on your computer. Make sure to
+              remember where you extracted the files.</p>
+            <p><code>Right-click → Extract All... → Choose a destination → Extract</code></p>
+          </div>
+
+          <div class="step">
+            <h3>Open Chrome Extensions Page</h3>
+            <p>Open Google Chrome and navigate to the extensions page by entering the following in your address bar:</p>
+            <p><code>chrome://extensions/</code></p>
+            <p>You can also access this page by clicking the puzzle piece icon in the top-right corner of Chrome, then
+              clicking "Manage Extensions" at the bottom of the dropdown.</p>
+          </div>
+
+          <div class="step">
+            <h3>Enable Developer Mode</h3>
+            <p>In the top-right corner of the extensions page, toggle on "Developer mode".</p>
+            <p>This will reveal additional developer options including the "Load unpacked" button.</p>
+          </div>
+
+          <div class="step">
+            <h3>Load Unpacked Extension</h3>
+            <p>Click the "Load unpacked" button that appears after enabling Developer Mode.</p>
+            <p>In the file browser that opens, navigate to the folder where you extracted the Signet extension files
+              (should contain files like manifest.json), and click "Select Folder".</p>
+          </div>
+
+          <div class="step">
+            <h3>Pin the Extension (Optional)</h3>
+            <p>To easily access Signet, click the puzzle piece icon in Chrome's toolbar, find Signet in the list, and
+              click the pin icon to keep it visible in your toolbar.</p>
+          </div>
+        </div>
+
+        <div class="important-note">
+          <h3>Important Note</h3>
+          <p>Since this extension is in development and loaded in Developer Mode, Chrome may show a message about
+            removing developer mode extensions when you restart your browser. This is normal for unpacked extensions.
+            Simply click "Cancel" to keep the extension, or you may need to re-enable it after restarting.</p>
+        </div>
+
+        <div class="warning">
+          <h3>Security Notice</h3>
+          <p>Only install Chrome extensions from trusted sources. The Signet extension is designed to manage blockchain
+            transactions and digital signatures, so it's important to verify you're installing the official version from
+            the Charisma team.</p>
+        </div>
+
+        <h2>Getting Started</h2>
+        <p>After installation, click the Signet icon in your Chrome toolbar to:</p>
+        <ul style="list-style-type: none; padding-left: 1rem; margin-bottom: 1.5rem;">
+          <li style="margin-bottom: 0.5rem; position: relative; padding-left: 1.5rem;">
+            <span style="position: absolute; left: 0; color: var(--cyber);">→</span>
+            Create a new wallet or import an existing one
+          </li>
+          <li style="margin-bottom: 0.5rem; position: relative; padding-left: 1.5rem;">
+            <span style="position: absolute; left: 0; color: var(--cyber);">→</span>
+            Connect to subnet-compatible dApps
+          </li>
+          <li style="margin-bottom: 0.5rem; position: relative; padding-left: 1.5rem;">
+            <span style="position: absolute; left: 0; color: var(--cyber);">→</span>
+            Configure automatic signing preferences for trusted applications
+          </li>
+          <li style="margin-bottom: 0.5rem; position: relative; padding-left: 1.5rem;">
+            <span style="position: absolute; left: 0; color: var(--cyber);">→</span>
+            Experience blockchain transactions at web2 speeds
+          </li>
+        </ul>
+
+        <p>Visit <a href="index.html"
+            style="color: var(--cyber); text-decoration: none; border-bottom: 1px dashed var(--cyber);">our demo
+            page</a> to try out the Signet SDK integration capabilities.</p>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2025 Charisma Labs. Signet is an open-source project.</p>
+    </footer>
+  </div>
+</body>
+
+</html>

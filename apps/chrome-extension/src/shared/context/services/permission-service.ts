@@ -58,7 +58,7 @@ export class PermissionService {
    */
   async checkPermission(request: PermissionRequest): Promise<PermissionCheckResult> {
     const permissionKey = this.getPermissionKey(request.origin, request.type)
-    
+
     try {
       // Default result (no permission, should ask)
       const result: PermissionCheckResult = {
@@ -129,14 +129,15 @@ export class PermissionService {
   async clearAllPermissions(): Promise<void> {
     try {
       // Get all keys and filter for permission keys
-      const allKeys = await permissionsStorage.keys()
+      const allPermissions = await permissionsStorage.getAll()
+      const allKeys = Object.keys(allPermissions)
       const permissionKeys = allKeys.filter(key => key.startsWith('permission:'))
-      
+
       // Delete each permission
       for (const key of permissionKeys) {
         await permissionsStorage.remove(key)
       }
-      
+
       console.log(`Cleared ${permissionKeys.length} saved permissions`)
     } catch (error) {
       console.error('Error clearing permissions:', error)

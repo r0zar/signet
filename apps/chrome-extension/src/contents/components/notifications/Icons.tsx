@@ -89,6 +89,14 @@ export const CustomIcons = {
       <path d="M7 7H17V17" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  searchMempool: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 15L21 21" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 10H12" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 8V12" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   defaultPermission: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 9V14" stroke="#FF9500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

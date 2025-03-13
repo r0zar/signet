@@ -199,6 +199,40 @@ export const TransactionCustodyContent: React.FC<PermissionContentProps> = ({ or
 );
 
 /**
+ * Search Mempool permission content
+ */
+export const SearchMempoolContent: React.FC<PermissionContentProps> = ({ origin, rememberCheckbox }) => (
+  <div style={commonStyles.contentContainer}>
+    <PermissionLevelIndicator level={PermissionLevel.SENSITIVE} />
+
+    <OriginBanner
+      origin={origin}
+      type={BannerType.WARNING}
+      message="wants to view your pending transactions"
+    />
+
+    <div style={commonStyles.explanationContainer}>
+      <FeatureExplanation
+        icon={PermissionIcons.balance}
+        text="View your pending transaction queue"
+      />
+
+      <FeatureExplanation
+        icon={PermissionIcons.wallet}
+        text="Access information about unsigned transactions"
+      />
+      
+      <FeatureExplanation
+        icon={PermissionIcons.warning}
+        text="Transaction signatures are masked for security"
+      />
+    </div>
+
+    {rememberCheckbox}
+  </div>
+);
+
+/**
  * Default permission content
  */
 export const DefaultPermissionContent: React.FC<DefaultPermissionContentProps> = ({ origin, type, rememberCheckbox }) => (

@@ -20,6 +20,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     // Generate sourcemaps for better debugging
-    sourcemap: true
-  }
+    sourcemap: true,
+    // Ensure public directory is copied to the build output
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        download: resolve(__dirname, 'download.html')
+      }
+    }
+  },
+  // Configure public folder to be copied as-is to build directory
+  publicDir: 'public'
 });

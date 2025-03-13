@@ -3,7 +3,7 @@
   "displayName": "Signet Signer",
   "version": "0.1.0",
   "description": "A secure wallet for connecting to decentralized applications and signing blockchain transactions",
-  "author": "Charisma",
+  "author": "Charisma Labs",
   "scripts": {
     "build": "plasmo build",
     "build:firefox": "plasmo build --target=firefox-mv2",
@@ -65,12 +65,8 @@
     "host_permissions": [
       "$CLERK_FRONTEND_API/*",
       "$PLASMO_PUBLIC_CLERK_SYNC_HOST/*",
-      "https://trusted-app-1.com/*",
-      "https://trusted-app-2.com/*",
-      "http://localhost:*/*",
-      "<all_urls>"
+      "https://oppredict.com/*"
     ],
-    "key": "$CRX_PUBLIC_KEY",
     "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'self'",
       "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'unsafe-inline' 'unsafe-eval'; child-src 'self'"
