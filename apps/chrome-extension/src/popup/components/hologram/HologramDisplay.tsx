@@ -134,9 +134,8 @@ export function HologramDisplay() {
       label: "STATUS",
       value: nodeStatus,
       color: nodeStatus === 'ERROR' ? 'rgba(255, 78, 78, 0.8)' :
-        nodeStatus === 'SYNCING' ? 'rgba(255, 204, 0, 0.8)' :
-          nodeStatus === 'ACTIVE' ? 'rgba(54, 199, 88, 0.8)' :
-            'rgba(125, 249, 255, 0.8)'
+        nodeStatus === 'ACTIVE' ? 'rgba(54, 199, 88, 0.8)' :
+          'rgba(125, 249, 255, 0.8)'
     }
   ];
 
@@ -350,9 +349,8 @@ export function HologramDisplay() {
                 <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '8px' }}>STATUS:</span>
                 <span style={{
                   color: nodeStatus === 'ERROR' ? 'rgba(255, 78, 78, 0.8)' :
-                    nodeStatus === 'SYNCING' ? 'rgba(255, 204, 0, 0.8)' :
-                      nodeStatus === 'ACTIVE' ? 'rgba(54, 199, 88, 0.8)' :
-                        'rgba(125, 249, 255, 0.8)',
+                    nodeStatus === 'ACTIVE' ? 'rgba(54, 199, 88, 0.8)' :
+                      'rgba(125, 249, 255, 0.8)',
                   fontWeight: 'bold',
                   fontSize: '8px'
                 }}>
