@@ -30,7 +30,7 @@ export type BlockchainSlice = BlockchainState & BlockchainActions
 
 export function useBlockchainSlice(signer: string | null = null): BlockchainSlice {
   // Initialize state
-  const [status, setStatus] = useState<Record<string, Status>>(null)
+  const [status, setStatus] = useState<Record<string, Status> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

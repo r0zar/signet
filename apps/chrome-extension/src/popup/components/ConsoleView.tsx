@@ -26,15 +26,17 @@ export function ConsoleView() {
 
       // List each subnet
       Object.values(status).forEach(subnetStatus => {
-        const subnetName = subnetStatus.subnet.split('.')[1];
-        logs.push(`  └─ ${subnetName}`);
+        if (subnetStatus && subnetStatus.subnet) {
+          const subnetName = subnetStatus.subnet.split('.')[1];
+          logs.push(`  └─ ${subnetName}`);
+        }
       });
     } else {
       logs.push('[SYSTEM] No subnets connected');
     }
 
     // Add signer info
-    if (currentAccount.stxAddress) {
+    if (currentAccount && currentAccount.stxAddress) {
       logs.push(`[SIGNER] ${currentAccount.stxAddress.substring(0, 6)}...${currentAccount.stxAddress.substring(currentAccount.stxAddress.length - 4)}`);
     } else {
       logs.push('[SIGNER] No active signer');
@@ -66,7 +68,7 @@ export function ConsoleView() {
     }
 
     setLogText(logs);
-  }, [messages, status, currentAccount.stxAddress, error]);
+  }, [messages, status, currentAccount, error]);
 
   return (
     <motion.div

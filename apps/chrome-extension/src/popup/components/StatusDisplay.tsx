@@ -1,193 +1,301 @@
 /**
  * StatusDisplay component for the extension popup
- * Shows the connection status with animated indicators based on real metrics
+ * Shows a cyberpunk-inspired real-time counter with animated spring effects
  */
 
-import { motion } from "framer-motion"
+import { useSpring, animated, config, useSpringRef, useChain } from "@react-spring/web"
 import { colors } from "../../shared/styles/theme"
 import { useSignetContext } from "~shared/context/SignetContext"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+
+interface StatusDotProps {
+  isLoading?: boolean;
+  error?: boolean;
+  activity?: number;
+}
+
+// Status indicator dot with spring physics
+function StatusDot({ isLoading, error, activity = 0 }: StatusDotProps) {
+  // Default and active colors
+  const idleColor = error ? '#FF4E4E' : colors.cyber;
+  const activeColor = error ? '#FF8888' : '#80E6FF';
+
+  // Glow spring - pulses once when activity changes to 10
+  const glowSpring = useSpring({
+    // Map activity to color and glow - more dramatic pulse
+    colorProgress: activity === 10 ? 1 : 0,
+    boxShadowSpread: activity === 10 ? 10 : 2,
+    // Only reset when activity is set to max
+    reset: activity === 10,
+    // Faster physics for more noticeable pulse
+    config: {
+      tension: 300,
+      friction: 10
+    }
+  });
+
+  // Loading indicator separate from activity
+  const loadingSpring = useSpring({
+    rotate: isLoading ? 360 : 0,
+    config: { duration: 1500 },
+    loop: isLoading,
+  });
+
+  return (
+    <animated.div
+      style={{
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        // Interpolate between colors based on activity
+        backgroundColor: glowSpring.colorProgress.to({
+          range: [0, 0.5, 1],
+          output: [idleColor, activeColor, idleColor]
+        }),
+        boxShadow: glowSpring.boxShadowSpread.to(
+          s => `0 0 ${s}px ${idleColor}88`
+        ),
+        // Only rotate if loading
+        transform: loadingSpring.rotate.to(r =>
+          isLoading ? `rotate(${r}deg)` : 'none'
+        ),
+        border: isLoading ? '1px solid rgba(255,255,255,0.5)' : 'none'
+      }}
+    />
+  );
+}
+
+interface AnimatedDigitProps {
+  digit: string;
+  index: number;
+}
+
+// Animated digit component - with different behavior based on position
+function AnimatedDigit({ digit, index, totalDigits }: AnimatedDigitProps & { totalDigits: number }) {
+
+  // Create a combined key that includes position and value
+  const uniqueKey = `pos-${index}-val-${digit}`;
+
+  // Different animation behavior based on position
+  const spring = useSpring({
+    // Only animate opacity
+    opacity: 1,
+    // Very minimal change for most digits
+    from: { opacity: 0.9 },
+    // Fast settle for most digits, slower for rapidly changing ones
+    config: {
+      tension: 300,
+      friction: 25,
+    },
+    // Only reset when digit changes
+    reset: true,
+    // Unique key to track position and value separately
+    key: uniqueKey
+  });
+
+  // Compute color based on position - creates a gradient effect
+  // Brightest for the rapidly changing digit
+  const brightness = 0.7 + (index * 0.02);
+  const digitColor = `rgba(125, 249, 255, ${brightness})`;
+
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        width: '0.55em', // Slightly narrower to fit all digits
+        textAlign: 'center',
+        color: digitColor,
+        textShadow: `0 0 4px ${digitColor}88`,
+        fontFamily: 'monospace',
+        fontWeight: 'bold',
+        position: 'relative', // For proper stacking
+        fontSize: '10px'
+      }}
+    >
+      {/* The actual visible digit */}
+      {digit}
+
+      {/* Overlay effect that animates opacity when the value changes */}
+      <animated.span
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: digitColor,
+          opacity: spring.opacity.to(o => (1 - o) * (0.2)), // More noticeable for rapid digits
+          borderRadius: '1px',
+          pointerEvents: 'none'
+        }}
+      />
+    </span>
+  );
+}
 
 export function StatusDisplay() {
   // Get state from the context
   const { status, error, isLoading, refreshStatus } = useSignetContext();
-  const [timestamp, setTimestamp] = useState(new Date().toISOString());
 
-  // Auto-refresh status and timestamp
-  useEffect(() => {
-    const refreshTimer = setInterval(() => {
-      refreshStatus().catch(console.error);
-      setTimestamp(new Date().toISOString());
-    }, 5000);
+  // Counter to force component updates
+  const [counter, setCounter] = useState(0);
 
-    return () => clearInterval(refreshTimer);
-  }, [refreshStatus]);
+  // Spring ref to chain animations
+  const activityRef = useSpringRef();
 
-  // Helper function to count all pending transactions
-  const countPendingTx = () => {
-    if (!status) return 0;
-    return Object.values(status).reduce(
-      (total, subnetStatus) => total + (subnetStatus.txQueue?.length || 0),
-      0
-    );
+  // This animation continuously updates every 16ms (60fps)
+  // It drives a counter state that forces re-renders
+  const tickSpring = useSpring({
+    from: { t: 0 },
+    to: { t: 1 },
+    loop: true,
+    config: { duration: 16 }, // 60fps update rate
+    // This is what makes the digits continuously update
+    onChange: () => {
+      setCounter(c => c + 1);
+    }
+  });
+
+  // Separate spring for data refresh on a 5-second interval
+  const refreshSpring = useSpring({
+    from: { r: 0 },
+    to: { r: 1 },
+    loop: { reset: true },
+    config: { duration: 5000 }, // 5 second interval
+    // Only refresh data when completing a cycle
+    onChange: ({ value }) => {
+      if (value.r >= 0.99) {
+        refreshStatus().catch(console.error);
+      }
+    }
+  });
+
+  // Activity level spring - spikes when refresh happens, then decays
+  const activity = useSpring({
+    activity: refreshSpring.r.to(r => r >= 0.99 || r <= 0.01 ? 10 : Math.max(0, 10 - (r * 10))),
+    config: { tension: 120, friction: 14 },
+    ref: activityRef
+  });
+
+  // Chain animations
+  useChain([activityRef], [0]);
+
+  // Format timestamp to show the full Date.now() value
+  // Since we're using frame to trigger re-renders, this updates rapidly
+  const formatTimestamp = () => {
+    // Get the full timestamp - will be 13 digits
+    return Date.now().toString();
   };
 
-  // Helper function to get highest block number
-  const getHighestBlock = () => {
-    if (!status) return 0;
-    const blocks = Object.values(status)
-      .map(subnetStatus => 0);
-    return blocks.length > 0 ? Math.max(...blocks) : 0;
-  };
-
-  // Calculate indicators based on real state
-  const hasActiveSignal = status && Object.keys(status).length > 0;
-  const txQueueSize = countPendingTx();
-  const blockHeight = getHighestBlock();
-  const subnetCount = status ? Object.keys(status).length : 0;
-
-  // Calculate power level as a percentage based on txQueueSize (max 100)
-  const powerPercent = Math.min(100, txQueueSize * 5); // 5% per tx, max 100%
-
-  // Display loading text
+  // Display status text
   const statusText = isLoading ? "SYNCING" : error ? "ERROR" : "SIGNET";
 
+  // Fixed border properties that don't animate
+  const borderColor = error
+    ? 'rgba(255, 78, 78, 0.6)'
+    : 'rgba(125, 249, 255, 0.3)';
+
+  // Container glow animation tied to activity
+  const containerSpring = useSpring({
+    boxShadow: activity.activity.to(a => `0 0 ${5 + Math.min(a, 10)}px rgba(125, 249, 255, 0.2)`),
+    config: { tension: 120, friction: 14 }
+  });
+
+  // Manual reset tracking for shimmer effect
+  const [shimmerKey, setShimmerKey] = useState(0);
+
+  // Use counter value to drive shimmer resets
+  useEffect(() => {
+    // Every 300 counter increments (approx 5 seconds at 60fps)
+    // This syncs with the refresh cycle
+    if (counter % 300 === 0 && counter > 0) {
+      // Increment key to force reset
+      setShimmerKey(prev => prev + 1);
+    }
+  }, [counter]);
+
+  // Horizontal shimmer effect spring - synced with refreshes
+  // Using key ensures it resets properly
+  const shimmerSpring = useSpring({
+    x: 100,
+    from: { x: -100 },
+    config: {
+      tension: 60,
+      friction: 20
+    },
+    reset: true,
+    // Using key to force re-initialization
+    key: shimmerKey
+  });
+
   return (
-    <div style={{
-      background: `linear-gradient(90deg, rgba(13, 17, 23, 0.8) 0%, rgba(125, 249, 255, 0.1) 50%, rgba(13, 17, 23, 0.8) 100%)`,
-      padding: '8px 12px',
+    <animated.div style={{
+      background: `linear-gradient(90deg, rgba(13, 17, 23, 0.9) 0%, rgba(125, 249, 255, 0.05) 50%, rgba(13, 17, 23, 0.9) 100%)`,
+      padding: '2px 12px', // Reduced padding for more compact design
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      borderBottom: '1px solid rgba(125, 249, 255, 0.3)',
-      position: 'relative'
+      position: 'relative',
+      overflow: 'hidden',
+      borderBottom: `1px solid ${borderColor}`,
+      boxShadow: containerSpring.boxShadow,
+      height: '28px' // Fixed height for consistency
     }}>
+      {/* Horizontal shimmer effect - only visible when active */}
+      <animated.div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(125, 249, 255, 0.08) 50%, transparent 100%)',
+        opacity: activity.activity.to(a => a > 0 ? 0.7 : 0),
+        pointerEvents: 'none',
+        transform: shimmerSpring.x.to(x => `translateX(${x}%)`)
+      }} />
+
+      {/* Status indicators - with static styling */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <motion.div
-          animate={{
-            boxShadow: isLoading
-              ? ['0 0 2px rgba(125, 249, 255, 0.8)', '0 0 8px rgba(125, 249, 255, 0.8)', '0 0 2px rgba(125, 249, 255, 0.8)']
-              : error
-                ? ['0 0 2px rgba(255, 78, 78, 0.8)', '0 0 8px rgba(255, 78, 78, 0.8)', '0 0 2px rgba(255, 78, 78, 0.8)']
-                : ['0 0 2px rgba(125, 249, 255, 0.8)', '0 0 8px rgba(125, 249, 255, 0.8)', '0 0 2px rgba(125, 249, 255, 0.8)']
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            backgroundColor: error ? '#FF4E4E' : colors.cyber,
-          }}
-        />
-        <motion.span
-          animate={{ opacity: isLoading ? [1, 0.5, 1] : 1 }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          style={{ fontSize: '12px', fontWeight: 'bold', color: error ? '#FF4E4E' : colors.cyber }}
-        >
-          {statusText}
-        </motion.span>
-        {blockHeight > 0 && (
-          <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.6)', marginLeft: '4px' }}>
-            #{blockHeight}
-          </span>
-        )}
-        {subnetCount > 0 && (
-          <span style={{
-            fontSize: '9px',
-            color: 'rgba(54, 199, 88, 0.8)',
-            background: 'rgba(54, 199, 88, 0.1)',
-            padding: '1px 3px',
-            borderRadius: '2px',
-            marginLeft: '4px'
-          }}>
-            {subnetCount} subnet{subnetCount > 1 ? 's' : ''}
-          </span>
-        )}
+        <StatusDot isLoading={isLoading} error={!!error} activity={activity.activity.get()} />
+        {/* Completely static text with fixed color - never changes except explicit error */}
+        <span style={{
+          fontSize: '12px',
+          fontWeight: 'bold',
+          // Fixed color that never changes for SIGNET
+          color: error ? '#FF4E4E' : '#7DF9FF',
+          // Very subtle fixed text shadow
+          textShadow: '0 0 4px rgba(125, 249, 255, 0.2)',
+          letterSpacing: '0.5px',
+        }}>
+          SIGNET
+        </span>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>TX</span>
-          <div style={{ position: 'relative' }}>
-            <motion.div
-              style={{
-                width: '30px',
-                height: '6px',
-                background: `linear-gradient(90deg, #7DF9FF 0%, ${hasActiveSignal ? '#36C758' : '#666666'} 100%)`,
-                borderRadius: '3px',
-                position: 'relative',
-                overflow: 'hidden',
-                opacity: hasActiveSignal ? 1 : 0.5
-              }}
-            >
-              {hasActiveSignal && (
-                <motion.div
-                  animate={{ x: ['-100%', '100%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%)'
-                  }}
-                />
-              )}
-            </motion.div>
-            {txQueueSize > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '-18px',
-                fontSize: '8px',
-                background: colors.cyber,
-                color: '#000',
-                padding: '1px 3px',
-                borderRadius: '4px',
-                fontWeight: 'bold'
-              }}>
-                {txQueueSize}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>MEM</span>
-          <motion.div
-            style={{
-              width: '30px',
-              height: '6px',
-              background: `linear-gradient(90deg, #DA2FB7 0%, ${powerPercent > 50 ? '#8C32C1' : '#666666'} 100%)`,
-              borderRadius: '3px',
-              position: 'relative',
-              overflow: 'hidden',
-              opacity: powerPercent > 0 ? 1 : 0.5
-            }}
-          >
-            {powerPercent > 0 && (
-              <motion.div
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: 'linear',
-                  // Speed up animation as power increases
-                  repeatDelay: Math.max(0, 0.5 - (powerPercent / 200))
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%)'
-                }}
-              />
-            )}
-          </motion.div>
-        </div>
+      {/* Time sequence counter */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        background: 'rgba(0, 0, 0, 0.3)',
+        padding: '2px 6px', // Smaller padding
+        borderRadius: '2px',
+        border: '1px solid rgba(125, 249, 255, 0.15)',
+        boxShadow: 'inset 0 0 4px rgba(125, 249, 255, 0.05)',
+        fontFamily: 'monospace',
+        fontSize: '11px' // Smaller font
+      }}>
+        {(() => {
+          const timestamp = formatTimestamp();
+          const totalDigits = timestamp.length;
+          return timestamp.split('').map((digit, index) => (
+            <AnimatedDigit
+              key={`${index}-${digit}`}
+              digit={digit}
+              index={index}
+              totalDigits={totalDigits}
+            />
+          ));
+        })()}
       </div>
-    </div>
+    </animated.div>
   );
 }

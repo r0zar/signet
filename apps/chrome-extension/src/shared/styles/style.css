@@ -39,6 +39,12 @@ body {
   50% { opacity: 1; box-shadow: 0 0 15px rgba(125, 249, 255, 0.8); }
 }
 
+@keyframes scanline {
+  0% { top: 0; }
+  50% { top: 100%; }
+  100% { top: 0; }
+}
+
 /* Class-based utilities with signet- prefix */
 .signet-animate-shimmer {
   animation: signet-shimmer 2s infinite;

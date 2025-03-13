@@ -1,6 +1,6 @@
 /**
  * Main popup component for the extension
- * Now uses the centralized useSignet hook for state management
+ * Displays a modern, streamlined interface for the Signet signer
  */
 import { keyframes } from "../shared/styles/theme"
 import "../shared/styles/style.css"
@@ -88,4 +88,4 @@ function IndexPopup() {
   )
 }
 
-// No export needed here since we export the wrapped component above
+// Default export is handled by the wrapped component at the top

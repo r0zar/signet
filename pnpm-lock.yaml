@@ -42,6 +42,9 @@ importers:
       '@react-spring/three':
         specifier: ^9.7.5
         version: 9.7.5(@react-three/fiber@9.0.4)(react@18.2.0)(three@0.174.0)
+      '@react-spring/web':
+        specifier: ^9.7.5
+        version: 9.7.5(react-dom@18.2.0)(react@18.2.0)
       '@react-three/fiber':
         specifier: ^9.0.4
         version: 9.0.4(@types/react@18.2.48)(react-dom@18.2.0)(react@18.2.0)(three@0.174.0)
@@ -3376,6 +3379,20 @@ packages:
 
   /@react-spring/types@9.7.5:
     resolution: {integrity: sha512-HVj7LrZ4ReHWBimBvu2SKND3cDVUPWKLqRTmWe/fNY6o1owGOX0cAHbdPDTMelgBlVbrTKrre6lFkhqGZErK/g==}
+    dev: false
+
+  /@react-spring/web@9.7.5(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-lmvqGwpe+CSttsWNZVr+Dg62adtKhauGwLyGE/RRyZ8AAMLgb9x3NDMA5RMElXo+IMyTkPp7nxTB8ZQlmhb6JQ==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@react-spring/animated': 9.7.5(react@18.2.0)
+      '@react-spring/core': 9.7.5(react@18.2.0)
+      '@react-spring/shared': 9.7.5(react@18.2.0)
+      '@react-spring/types': 9.7.5
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
     dev: false
 
   /@react-three/fiber@9.0.4(@types/react@18.2.48)(react-dom@18.2.0)(react@18.2.0)(three@0.174.0):
