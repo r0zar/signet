@@ -134,7 +134,7 @@ importers:
   apps/signet-vanilla-demo:
     dependencies:
       signet-sdk:
-        specifier: workspace:*
+        specifier: ^0.1.7
         version: link:../../packages/signet-sdk
     devDependencies:
       vite:
