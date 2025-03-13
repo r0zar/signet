@@ -203,3 +203,92 @@ export async function signPrediction(data: any): Promise<any> {
         return { success: false };
     }
 }
+
+/**
+ * Search the mempool for transactions matching given criteria
+ * 
+ * @param criteria Object with search criteria like nonce, signer, type, etc.
+ * @param subnetId Optional: specific subnet ID to search in
+ * @returns Array of matching transactions (with signatures masked)
+ */
+export async function searchMempool(
+    criteria: {
+        nonce?: number;
+        signer?: string;
+        type?: string;
+        to?: string;
+        marketId?: number;
+        outcomeId?: number;
+        [key: string]: any;
+    },
+    subnetId?: string
+): Promise<{
+    success: boolean;
+    transactions: any[];
+    error?: string;
+}> {
+    try {
+        const response = await request<{
+            criteria: Record<string, any>;
+            subnetId?: string;
+        }, any>({
+            type: MessageType.SEARCH_MEMPOOL,
+            data: { criteria, subnetId }
+        });
+        
+        return response.data;
+    } catch (error) {
+        console.error('Failed to search mempool:', error);
+        return { 
+            success: false, 
+            transactions: [],
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Request custody of a transaction
+ * This transfers control of a transaction to the requesting app
+ * The transaction will be removed from the wallet's pending transactions
+ * 
+ * @param criteria Object with criteria to identify the transaction (nonce, signer, etc.)
+ * @param subnetId Optional: specific subnet ID if known
+ * @returns Object containing the transaction data and custody transfer result
+ */
+export async function requestTransactionCustody(
+    criteria: {
+        nonce?: number;
+        signer?: string;
+        type?: string;
+        to?: string;
+        marketId?: number;
+        outcomeId?: number;
+        signature?: string;
+        [key: string]: any;
+    },
+    subnetId?: string
+): Promise<{
+    success: boolean;
+    transaction?: any;
+    discardedFrom?: string[];
+    error?: string;
+}> {
+    try {
+        const response = await request<{
+            criteria: Record<string, any>;
+            subnetId?: string;
+        }, any>({
+            type: MessageType.REQUEST_TRANSACTION_CUSTODY,
+            data: { criteria, subnetId }
+        });
+        
+        return response.data;
+    } catch (error) {
+        console.error('Failed to request transaction custody:', error);
+        return { 
+            success: false, 
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}

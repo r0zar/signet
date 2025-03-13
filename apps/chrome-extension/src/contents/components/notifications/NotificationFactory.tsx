@@ -9,6 +9,7 @@ import {
   BalanceContent,
   BalancesContent,
   TransferContent,
+  TransactionCustodyContent,
   DefaultPermissionContent
 } from './PermissionContent';
 
@@ -93,6 +94,21 @@ export class NotificationFactory {
           customIcon: CustomIcons.createTransfer,
           message: (
             <TransferContent
+              origin={permission.origin}
+              rememberCheckbox={rememberCheckbox}
+            />
+          ),
+          actions: this.getStandardActions()
+        };
+        
+      case MessageType.REQUEST_TRANSACTION_CUSTODY:
+        return {
+          title: 'TRANSACTION CUSTODY REQUEST',
+          type: 'SDK_PERMISSION',
+          color: colors.neonRed,
+          customIcon: CustomIcons.createTransfer, // Reusing transfer icon
+          message: (
+            <TransactionCustodyContent
               origin={permission.origin}
               rememberCheckbox={rememberCheckbox}
             />

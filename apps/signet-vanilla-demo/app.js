@@ -7,6 +7,8 @@ import {
   getBalance,
   getBalances,
   createTransfer,
+  requestTransactionCustody,
+  searchMempool,
   getSubnetIds,
   getSubnetData
 } from 'signet-sdk';
@@ -16,10 +18,11 @@ let extensionAvailable = false;
 let currentStatus = null;
 let selectedSubnetId = null;  // Currently selected subnet ID
 let subnets = {};           // Map of subnet IDs to subnet data
+let lastTransactionSignature = null; // For custody demonstration
 
 // Message tracking for debugging
 const messageTracker = {
-  counts: { extension: 0, status: 0, balance: 0, transfer: 0, mining: 0 },
+  counts: { extension: 0, status: 0, balance: 0, transfer: 0, mining: 0, custody: 0, search: 0 },
   track(type) {
     if (type === MessageType.CHECK_EXTENSION_INSTALLED) {
       this.counts.extension++;
@@ -31,13 +34,18 @@ const messageTracker = {
       this.counts.transfer++;
     } else if (type === MessageType.MINE_BLOCK || type === MessageType.MINE_ALL_PENDING_BLOCKS) {
       this.counts.mining++;
+    } else if (type === MessageType.REQUEST_TRANSACTION_CUSTODY) {
+      this.counts.custody++;
+    } else if (type === MessageType.SEARCH_MEMPOOL) {
+      this.counts.search++;
     }
 
     // Update the debug badge - simplified
     const badge = document.getElementById('debug-badge');
     if (badge) {
       const total = this.counts.extension + this.counts.status +
-        this.counts.balance + this.counts.transfer + this.counts.mining;
+        this.counts.balance + this.counts.transfer + this.counts.mining + 
+        this.counts.custody + this.counts.search;
       badge.textContent = `API Calls: ${total}`;
     }
   }
@@ -249,12 +257,38 @@ function init() {
       return;
     }
 
-    createTransfer({ subnetId: selectedSubnetId, to, amount, nonce: Date.now() })
+    const nonce = Date.now();
+    createTransfer({ subnetId: selectedSubnetId, to, amount, nonce })
       .then(result => {
         displayMessage({
           type: 'Create Transfer',
           data: result
         });
+        
+        // Enable request custody if we have a transaction in the response
+        if (result.success && result.transaction) {
+          // Store transaction properties for search/custody
+          // This simulates how apps would track their own transactions
+          lastTransactionSignature = {
+            // These properties get stored in tx.data:
+            type: 'transfer',
+            nonce: nonce,
+            to: to,
+            amount: parseFloat(amount),
+            subnetId: selectedSubnetId
+          };
+          
+          // Show the custody request UI
+          const custodyControls = document.getElementById('custody-actions');
+          if (custodyControls) {
+            custodyControls.classList.add('enabled');
+            const custodyButton = document.getElementById('request-custody');
+            if (custodyButton) {
+              custodyButton.removeAttribute('disabled');
+              custodyButton.classList.remove('disabled');
+            }
+          }
+        }
 
         // Clear form
         // document.getElementById('transfer-to').value = '';
@@ -415,20 +449,31 @@ function enableOperations(enable = true) {
   const subnetButtons = document.querySelectorAll('#subnet-actions button');
   const allBalancesButtons = document.querySelectorAll('#all-balances-actions button');
   const transferButtons = document.querySelectorAll('#transfer-actions button');
+  // Don't enable custody buttons here - they should only be enabled after a transaction is created
 
   // Update panels
   const subnetActionsPanel = document.getElementById('subnet-actions');
   const allBalancesPanel = document.getElementById('all-balances-actions');
   const transferActionsPanel = document.getElementById('transfer-actions');
+  const custodyActionsPanel = document.getElementById('custody-actions');
 
   if (enable) {
     subnetActionsPanel.classList.add('enabled');
     allBalancesPanel.classList.add('enabled');
     transferActionsPanel.classList.add('enabled');
+    // Don't enable custody panel by default - only after transaction is created
   } else {
     subnetActionsPanel.classList.remove('enabled');
     allBalancesPanel.classList.remove('enabled');
     transferActionsPanel.classList.remove('enabled');
+    custodyActionsPanel.classList.remove('enabled');
+    
+    // Make sure custody button is disabled
+    const custodyButton = document.getElementById('request-custody');
+    if (custodyButton) {
+      custodyButton.setAttribute('disabled', 'disabled');
+      custodyButton.classList.add('disabled');
+    }
   }
 
   // Update subnet buttons
@@ -470,6 +515,157 @@ function disableOperations() {
   enableOperations(false);
 }
 
+// Handle mempool search and custody requests
+function initMempoolHandlers() {
+  // Mempool search handler
+  const searchButton = document.getElementById('search-mempool');
+  if (searchButton) {
+    searchButton.addEventListener('click', () => {
+      if (!selectedSubnetId) {
+        displayMessage({
+          type: 'Error',
+          error: 'No subnet selected'
+        });
+        return;
+      }
+
+      // If we have lastTransactionSignature, use that for precise search
+      // This shows how an app would find specific transactions it created
+      let criteria = {};
+      
+      if (lastTransactionSignature) {
+        // Use the same properties we saved from our last transaction
+        criteria = { ...lastTransactionSignature };
+        
+        // Remove subnetId if present since we pass it separately
+        if (criteria.subnetId) {
+          delete criteria.subnetId;
+        }
+      } else {
+        // Otherwise just search by signer
+        const subnetData = subnets[selectedSubnetId];
+        if (subnetData && subnetData.signer) {
+          criteria.signer = subnetData.signer;
+        }
+      }
+      
+      // Search the mempool with these criteria
+      searchMempool(criteria, selectedSubnetId)
+        .then(result => {
+          displayMessage({
+            type: 'Search Mempool',
+            data: result
+          });
+          
+          // If we found transactions, enable the custody button
+          if (result.success && result.transactions && result.transactions.length > 0) {
+            // We already have the transaction criteria in lastTransactionSignature
+            // No need to modify it from search results since we used it for the search
+            
+            // If we don't have lastTransactionSignature but found transactions
+            if (!lastTransactionSignature) {
+              // Store the latest transaction's details for custody request
+              const latestTx = result.transactions[0];
+              
+              // Store transaction properties (except signature which is masked)
+              // We'll use a combination of properties to uniquely identify it
+              if (latestTx.type === 'transfer') {
+                lastTransactionSignature = {
+                  nonce: latestTx.nonce,
+                  to: latestTx.to,
+                  amount: latestTx.amount,
+                  type: latestTx.type
+                };
+              } else {
+                // For other transaction types, just use what we have
+                lastTransactionSignature = {
+                  nonce: latestTx.nonce,
+                  type: latestTx.type
+                };
+              }
+            }
+            
+            // Enable the custody button
+            const custodyButton = document.getElementById('request-custody');
+            if (custodyButton) {
+              custodyButton.removeAttribute('disabled');
+              custodyButton.classList.remove('disabled');
+            }
+            
+            const custodyControls = document.getElementById('custody-actions');
+            if (custodyControls) {
+              custodyControls.classList.add('enabled');
+            }
+          } else {
+            // No transactions found, disable the custody button
+            const custodyButton = document.getElementById('request-custody');
+            if (custodyButton) {
+              custodyButton.setAttribute('disabled', 'disabled');
+              custodyButton.classList.add('disabled');
+            }
+          }
+        })
+        .catch(error => {
+          displayMessage({
+            type: 'Error',
+            error: error.message || 'Failed to search mempool'
+          });
+        });
+    });
+  }
+  
+  // Custody request handler
+  const custodyButton = document.getElementById('request-custody');
+  if (custodyButton) {
+    custodyButton.addEventListener('click', () => {
+      if (!lastTransactionSignature) {
+        displayMessage({
+          type: 'Error',
+          error: 'No transaction criteria available. Search mempool first.'
+        });
+        return;
+      }
+
+      if (!selectedSubnetId) {
+        displayMessage({
+          type: 'Error',
+          error: 'No subnet selected'
+        });
+        return;
+      }
+
+      // Request custody using search criteria (no signature needed)
+      requestTransactionCustody(lastTransactionSignature, selectedSubnetId)
+        .then(result => {
+          displayMessage({
+            type: 'Transaction Custody Request',
+            data: result
+          });
+
+          // Disable the custody button after successful request
+          if (result.success) {
+            custodyButton.setAttribute('disabled', 'disabled');
+            custodyButton.classList.add('disabled');
+            
+            const custodyControls = document.getElementById('custody-actions');
+            if (custodyControls) {
+              custodyControls.classList.remove('enabled');
+            }
+            
+            // Clear the transaction criteria
+            lastTransactionSignature = null;
+          }
+        })
+        .catch(error => {
+          displayMessage({
+            type: 'Error',
+            error: error.message || 'Failed to request transaction custody'
+          });
+        });
+    });
+  }
+}
+
 // Display a message in the log panel
 function displayMessage(data) {
   const responseElement = document.getElementById('response');
@@ -477,4 +673,7 @@ function displayMessage(data) {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  initMempoolHandlers();
+});

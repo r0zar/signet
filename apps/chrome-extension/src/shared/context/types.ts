@@ -17,6 +17,9 @@ export type MessageAction =
   | "mineBatchTransactions"
   | "discardTransaction"
   | "setSigner"
+  | "findTransactionBySignature"
+  | "requestTransactionCustody"
+  | "searchMempool"
   // Wallet related actions
   | "initializeWallet"
   | "checkWalletInitialized"

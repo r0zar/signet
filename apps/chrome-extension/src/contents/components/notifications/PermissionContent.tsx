@@ -165,6 +165,40 @@ export const TransferContent: React.FC<PermissionContentProps> = ({ origin, reme
 );
 
 /**
+ * Transaction Custody permission content
+ */
+export const TransactionCustodyContent: React.FC<PermissionContentProps> = ({ origin, rememberCheckbox }) => (
+  <div style={commonStyles.contentContainer}>
+    <PermissionLevelIndicator level={PermissionLevel.CRITICAL} />
+
+    <OriginBanner
+      origin={origin}
+      type={BannerType.CRITICAL}
+      message="wants to take custody of a signed transaction"
+    />
+
+    <div style={commonStyles.explanationContainer}>
+      <FeatureExplanation
+        icon={PermissionIcons.transfer}
+        text="Take control of a transaction you've signed"
+      />
+
+      <FeatureExplanation
+        icon={PermissionIcons.warning}
+        text="Can submit the transaction to the blockchain at any time"
+      />
+      
+      <FeatureExplanation
+        icon={PermissionIcons.warning}
+        text="Transaction will be removed from your pending transactions"
+      />
+    </div>
+
+    {rememberCheckbox}
+  </div>
+);
+
+/**
  * Default permission content
  */
 export const DefaultPermissionContent: React.FC<DefaultPermissionContentProps> = ({ origin, type, rememberCheckbox }) => (

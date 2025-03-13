@@ -47,7 +47,9 @@ export class MessageHandlerService {
       MessageType.GET_BALANCE,
       MessageType.GET_BALANCES,
       MessageType.CREATE_TRANSFER_TX,
-      MessageType.SIGN_PREDICTION
+      MessageType.SIGN_PREDICTION,
+      MessageType.REQUEST_TRANSACTION_CUSTODY,
+      MessageType.SEARCH_MEMPOOL
     ].includes(type)
   }
 
@@ -78,6 +80,14 @@ export class MessageHandlerService {
 
       case MessageType.SIGN_PREDICTION:
         await this.handleSignPrediction(message)
+        break
+        
+      case MessageType.REQUEST_TRANSACTION_CUSTODY:
+        await this.handleRequestTransactionCustody(message)
+        break
+        
+      case MessageType.SEARCH_MEMPOOL:
+        await this.handleSearchMempool(message)
         break
 
       default:
@@ -188,6 +198,11 @@ export class MessageHandlerService {
         this.blockchainSlice.refreshStatus()
         this.blockchainSlice.getAssetBalances(data.signer)
       }
+      
+      // Mask the signature to prevent unauthorized custody
+      if (result.transaction) {
+        result.transaction.signature = "[MASKED]";
+      }
 
       respond(message, result)
     } catch (error) {
@@ -210,12 +225,86 @@ export class MessageHandlerService {
         this.blockchainSlice.refreshStatus()
         this.blockchainSlice.getAssetBalances(data.signer)
       }
+      
+      // Mask the signature to prevent unauthorized custody
+      if (result.transaction) {
+        result.transaction.signature = "[MASKED]";
+      }
 
       respond(message, result)
     } catch (error) {
       respond(message, undefined, {
         code: 'SIGN_PREDICTION_ERROR',
         message: error instanceof Error ? error.message : 'Failed to sign prediction'
+      })
+    }
+  }
+  
+  /**
+   * Handle SEARCH_MEMPOOL message
+   * This searches for transactions in the mempool that match given criteria
+   */
+  async handleSearchMempool(message: Message): Promise<void> {
+    try {
+      // Extract search criteria from the message
+      const { criteria, subnetId } = message.data as { criteria: Record<string, any>, subnetId?: string }
+      
+      if (!criteria || Object.keys(criteria).length === 0) {
+        throw new Error("Search criteria are required")
+      }
+      
+      // Search the mempool using the background script
+      const searchResult = await this.sendMessage<{
+        success: boolean,
+        transactions: any[],
+        error?: string
+      }>("searchMempool", { criteria, subnetId })
+      
+      respond(message, searchResult)
+    } catch (error) {
+      respond(message, undefined, {
+        code: 'SEARCH_MEMPOOL_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to search mempool'
+      })
+    }
+  }
+
+  /**
+   * Handle REQUEST_TRANSACTION_CUSTODY message
+   * This transfers custody of a transaction to the requesting app
+   */
+  async handleRequestTransactionCustody(message: Message): Promise<void> {
+    try {
+      // Extract criteria from the message
+      const { criteria, subnetId } = message.data as { criteria: Record<string, any>, subnetId?: string }
+      
+      if (!criteria || Object.keys(criteria).length === 0) {
+        throw new Error("Transaction criteria are required for custody request")
+      }
+      
+      // Request custody by discarding the transaction from wallet's mempool
+      // The background handler will find the transaction and return its data
+      const custodyResult = await this.sendMessage<{
+        success: boolean,
+        transaction: any,
+        discardedFrom: string[]
+      }>("requestTransactionCustody", { criteria, subnetId })
+      
+      // If the transaction wasn't found, the background will return success: false
+      if (!custodyResult.success) {
+        throw new Error(custodyResult.error || `Transaction matching criteria not found`)
+      }
+      
+      // Refresh blockchain state after custody transfer
+      if (this.blockchainSlice) {
+        this.blockchainSlice.refreshStatus()
+      }
+      
+      respond(message, custodyResult)
+    } catch (error) {
+      respond(message, undefined, {
+        code: 'REQUEST_CUSTODY_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to transfer transaction custody'
       })
     }
   }

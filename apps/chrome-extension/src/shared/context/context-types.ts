@@ -3,7 +3,6 @@ import type { BlockchainSlice } from './slices/blockchainSlice'
 import type { WalletSlice } from './slices/walletSlice'
 
 // Re-export types needed by consuming components
-export type { PermissionRequest } from './slices/messagesSlice'
 export type { BlockchainSlice } from './slices/blockchainSlice'
 
 // Define the complete context type with all slices combined
