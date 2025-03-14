@@ -7,19 +7,8 @@
 </p>
 <div align="center">
   <h1>
-    Signet: The Missing Link for Web3 UX
+    Signet Signer
   </h1>  
-  <a href="https://github.com/r0zar/signet">
-    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/r0zar/signet?style=social" />
-  </a>
-  <a href="https://discord.gg/r0zar">
-    <img alt="Discord" src="https://img.shields.io/discord/856971667393609759?color=7389D8&label&logo=discord&logoColor=ffffff" />
-  </a>
-  <a href="https://twitter.com/signetwallet">
-    <img alt="Twitter" src="https://img.shields.io/twitter/url.svg?label=%40signetwallet&style=social&url=https%3A%2F%2Ftwitter.com%2Fsignetwallet" />
-  </a> 
-  <br />
-  <br />
   <img alt="Signet Architecture" src="https://raw.githubusercontent.com/r0zar/signet/refs/heads/main/formatted_images/signet_monitor_cyan_strong_persp.png">
 </div>
 
