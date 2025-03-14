@@ -9,10 +9,10 @@
   <h1>
     Signet: The Missing Link for Web3 UX
   </h1>  
-  <a href="https://github.com/charisma-labs/signet">
-    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/charisma-labs/signet?style=social" />
+  <a href="https://github.com/r0zar/signet">
+    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/r0zar/signet?style=social" />
   </a>
-  <a href="https://discord.gg/charisma-labs">
+  <a href="https://discord.gg/r0zar">
     <img alt="Discord" src="https://img.shields.io/discord/856971667393609759?color=7389D8&label&logo=discord&logoColor=ffffff" />
   </a>
   <a href="https://twitter.com/signetwallet">
@@ -20,7 +20,7 @@
   </a> 
   <br />
   <br />
-  <img alt="Signet Architecture" src="./assets/signet-hero.png">
+  <img alt="Signet Architecture" src="https://github.com/r0zar/signet/assets/signet-hero.png">
 </div>
 
 ## Introduction
