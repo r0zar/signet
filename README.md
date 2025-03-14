@@ -20,7 +20,7 @@
   </a> 
   <br />
   <br />
-  <img alt="Signet Architecture" src="https://github.com/r0zar/signet/assets/signet-hero.png">
+  <img alt="Signet Architecture" src="https://github.com/r0zar/signet/formatted_images/signet_monitor_cyan_strong_persp.png">
 </div>
 
 ## Introduction
