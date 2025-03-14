@@ -65,7 +65,8 @@
     "host_permissions": [
       "$CLERK_FRONTEND_API/*",
       "$PLASMO_PUBLIC_CLERK_SYNC_HOST/*",
-      "https://oppredict.com/*"
+      "https://www.oppredict.com/*",
+      "http://localhost:*/*"
     ],
     "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'self'",
