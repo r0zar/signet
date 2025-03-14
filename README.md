@@ -29,7 +29,6 @@ Signet serves as the foundational user-facing component of the Blaze Protocol, m
 - **Two-Phase Transaction Authorization**: Sign operations and control when they are revealed to applications
 - **Private Transaction Storage**: Store signed transactions privately until you decide to reveal them
 - **Intuitive Permission System**: Fine-grained control over what applications can do with your identity
-- **Multi-Chain Support**: Manage identities across multiple blockchains in one interface
 - **Transaction Batching**: Combine multiple actions into efficient batches for cost savings
 - **Web2-Like Experience**: No cryptic confirmation modals or technical jargon
 
