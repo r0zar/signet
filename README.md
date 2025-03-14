@@ -1,97 +1,186 @@
 <p align="center">
-  <a href="https://clerk.com?utm_source=github&utm_medium=owned" target="_blank" rel="noopener noreferrer">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="./assets/light-logo.png">
-      <img alt="Clerk Logo for light background" src="./assets/dark-logo.png" height="64">
-    </picture>
-  </a>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/signet-logo-light.png">
+    <img alt="Signet Logo" src="./assets/signet-logo-dark.png" height="100">
+  </picture>
   <br />
 </p>
 <div align="center">
   <h1>
-    Clerk and Chrome Extension Demo
+    Signet: The Missing Link for Web3 UX
   </h1>  
-  <a href="https://www.npmjs.com/package/@clerk/clerk-js">
-    <img alt="Downloads" src="https://img.shields.io/npm/dm/@clerk/clerk-js" />
+  <a href="https://github.com/charisma-labs/signet">
+    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/charisma-labs/signet?style=social" />
   </a>
-  <a href="https://discord.com/invite/b5rXHjAg7A">
+  <a href="https://discord.gg/charisma-labs">
     <img alt="Discord" src="https://img.shields.io/discord/856971667393609759?color=7389D8&label&logo=discord&logoColor=ffffff" />
   </a>
-  <a href="https://twitter.com/clerkdev">
-    <img alt="Twitter" src="https://img.shields.io/twitter/url.svg?label=%40clerkdev&style=social&url=https%3A%2F%2Ftwitter.com%2Fclerkdev" />
+  <a href="https://twitter.com/signetwallet">
+    <img alt="Twitter" src="https://img.shields.io/twitter/url.svg?label=%40signetwallet&style=social&url=https%3A%2F%2Ftwitter.com%2Fsignetwallet" />
   </a> 
   <br />
   <br />
-  <img alt="Clerk Hero Image" src="./assets/hero.png">
+  <img alt="Signet Architecture" src="./assets/signet-hero.png">
 </div>
 
 ## Introduction
 
-Clerk is a developer-first authentication and user management solution. It provides pre-built React components and hooks for sign-in, sign-up, user profile, and organization management. Clerk is designed to be easy to use and customize, and can be dropped into any Chrome Extension application.
+Signet is a comprehensive infrastructure for blockchain interaction that bridges web applications and decentralized protocols. It consists of two main components:
 
-This repo includes a demo of the Chrome Extension SDK and its core features. Included in this demo app are:
-* Using [React Router](https://clerk.com/docs/references/chrome-extension/add-react-router) for route/page management in the extension
-* [Sync Host](https://clerk.com/docs/references/chrome-extension/sync-host-configuration) to allow for syncing auth state from a web application to the extension
-* The [`createClerkClient()`](https://clerk.com/docs/references/chrome-extension/create-clerk-client) helper for background service workers
+1. **Signet Wallet Extension**: A browser extension that enables users to securely create and manage blockchain identities, sign transactions, and control when and how their signed transactions are revealed to applications.
 
+2. **Signet SDK**: A developer toolkit that allows web applications to seamlessly communicate with the Signet Wallet, request signatures, and manage transaction lifecycles.
 
+Signet serves as the foundational user-facing component of the Blaze Protocol, making blockchain interactions as seamless as traditional web experiences.
 
+## Key Features
 
-## Running the demo
+### For Users
 
-```bash
-git clone https://github.com/clerkinc/clerk-chrome-extension-demo
+- **Two-Phase Transaction Authorization**: Sign operations and control when they are revealed to applications
+- **Private Transaction Storage**: Store signed transactions privately until you decide to reveal them
+- **Intuitive Permission System**: Fine-grained control over what applications can do with your identity
+- **Multi-Chain Support**: Manage identities across multiple blockchains in one interface
+- **Transaction Batching**: Combine multiple actions into efficient batches for cost savings
+- **Web2-Like Experience**: No cryptic confirmation modals or technical jargon
+
+### For Developers
+
+- **Simple Integration**: Add blockchain capabilities to any web application with minimal code
+- **Optimistic UI Support**: Update interfaces immediately while transactions are pending
+- **Transaction Management**: Control when and how to submit batched transactions
+- **Flexible Authentication**: Use for identity and authentication without transaction overhead
+- **Comprehensive TypeScript SDK**: Type-safe integration with your application
+- **Zero-Dependency Core**: Lightweight integration options
+
+## Architecture
+
+Signet implements a multi-layered architecture that separates transaction signing from settlement:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant SignetExt as Signet Wallet
+    participant DApp as Web Application
+    participant Chain as Blockchain
+    
+    User->>+DApp: Initiate action
+    DApp->>+SignetExt: Request signature
+    SignetExt->>User: Request approval
+    User->>SignetExt: Approve operation
+    SignetExt->>SignetExt: Generate and store signature
+    SignetExt-->>-DApp: Return proof (not full transaction)
+    
+    DApp->>DApp: Update UI optimistically
+    DApp->>SignetExt: Request transaction reveal
+    SignetExt->>User: Request reveal approval
+    User->>SignetExt: Approve reveal
+    SignetExt-->>DApp: Reveal signed transaction
+    DApp->>Chain: Submit transaction (single or batch)
+    Chain-->>DApp: Confirm settlement
 ```
 
-To run the example locally, you need to:
+## Getting Started
 
-1. Sign up for a Clerk account at [https://clerk.com](https://dashboard.clerk.com/sign-up?utm_source=readme&utm_medium=owned&utm_campaign=chrome-extension&utm_content=10-24-2023&utm_term=clerk-chrome-extension-demo).
+### For Users
 
-2. Go to the [Clerk dashboard](https://dashboard.clerk.com?utm_source=readme&utm_medium=owned&utm_campaign=chrome-extension&utm_content=10-24-2023&utm_term=clerk-chrome-extension-demo) and create an application.
+1. Install the Signet Wallet extension from the [Chrome Web Store](https://chrome.google.com/webstore/detail/signet-wallet/signet-wallet-extension)
+2. Create or import your identity
+3. Start using Signet-compatible applications with a seamless experience
 
-3. Copy the [`.env.development.example` file](./apps/chrome-extension/.env.development.example) to `/apps/chrome-extension/.env.development` and add the required environment variables.
-* `PLASMO_PUBLIC_CLERK_PUBLISHABLE_KEY` - the Clerk Publishable Key from the [API keys](https://dashboard.clerk.com/last-active?path=api-keys) Dashboard page.
-* `CLERK_FRONTEND_API` - the Clerk Frontend API URL from the `Show API URLs` button on the [API keys](https://dashboard.clerk.com/last-active?path=api-keys) dashboard page.
-* `PLASMO_PUBLIC_CLERK_SYNC_HOST` - this is only required if you want to test the Sync Host feature. This is configured to match the web app included in this repo.
+### For Developers
 
-4. Copy the [`.env.chrome.example` file](./apps/chrome-extension/.env.chrome.example) to `/apps/chrome-extension/.env.chrome` and add the following required environment variables.
-* `CRX_PUBLIC_KEY` - the public key for your Chrome Extension. The [Chrome Extension Quickstart](https://clerk.com/docs/quickstarts/chrome-extension) and the [Configure a Consistent CRX ID](https://clerk.com/docs/references/chrome-extension/configure-consistent-crx-id) cover creating this.
+1. Install the Signet SDK:
+```bash
+npm install signet-sdk
+# or
+yarn add signet-sdk
+# or
+pnpm add signet-sdk
+```
 
-5. Copy the [`.env.example` file](./apps/web-app/.env.example) to `/apps/web-app/.env` and add the required environment variables.
-* `VITE_CLERK_PUBLISHABLE_KEY` - the Clerk Publishable Key from the [API keys](https://dashboard.clerk.com/last-active?path=api-keys) Dashboard page.
+2. Initialize the SDK in your application:
+```typescript
+import { Signet } from 'signet-sdk';
 
+const signet = new Signet({
+  appName: 'Your Application Name',
+  network: 'mainnet', // or 'testnet'
+});
 
-6. `pnpm install` the required dependencies for both applications.
+// Check if Signet wallet is installed
+const isInstalled = await signet.isInstalled();
+if (!isInstalled) {
+  // Prompt user to install Signet
+}
 
-7. `pnpm dev` to launch the web application and launch the dev server for the extension and create it initial build.
+// Request a signature
+const result = await signet.requestSignature({
+  operation: 'transfer',
+  recipient: 'RECIPIENT_ADDRESS',
+  amount: 100,
+});
 
-8. Install the extension in Chrome by loading it as an [unpacked extension](https://clerk.com/docs/quickstarts/chrome-extension#load-your-chrome-extension-into-your-chromium-based-browser).
+// Update UI optimistically
+updateUI(result.proof);
 
-## Learn more
+// When ready to settle, request the full transaction
+const transaction = await signet.revealTransaction(result.proofId);
 
-To learn more about Clerk and Chrome Extensions, check out the following resources:
+// Submit the transaction
+const txResult = await signet.submitTransaction(transaction);
+```
 
-- [Quickstart: Get started with Chrome Extensions and Clerk](https://clerk.com/docs/quickstarts/chrome-extension?utm_source=readme&utm_medium=owned&utm_campaign=chrome-extension&utm_content=10-24-2023&utm_term=clerk-chrome-extension-demo)
+## Development Setup
 
-- [Clerk Documentation](https://clerk.com/docs?utm_source=readme&utm_medium=owned&utm_campaign=chrome-extension&utm_content=10-24-2023&utm_term=clerk-chrome-extension-demo)
-- [Chrome Extensions](https://developer.chrome.com/docs/extensions)
+To work on Signet locally:
 
+```bash
+# Clone the repository
+git clone https://github.com/charisma-labs/signet.git
+cd signet
 
-## SDK Features
+# Install dependencies
+pnpm install
 
-1. To see the usage of React Router, open the popup and navigate between the page using the buttons at the bottom.
+# Start the development server
+pnpm dev
 
-2. For Sync Host, make sure you are signed out of the extension and the web applications. Once fully signed out, sign into the web application in any manner you wish, including OAuth. Once done, open the popup and you will see you are signed in correctly. **WARNING:** You must be using the same Clerk instance and the same Publishable key in both. If you are using a different Publishable key then this feature will not work.
+# Build the extension and SDK
+pnpm build
+```
 
-3. To test the `createClerkClient()` function, sign into the extension. Once signed in there is a `SDK Features` button in the bottom menu. Navigate to that page and then click the `Open Demo Tab` button. This will open a new tab in your browser. In that tab click the `Get Token` button. The box for the token will be populated with your current session token.
+To install the development version of the extension:
 
+1. Go to `chrome://extensions/` in Chrome
+2. Enable Developer Mode
+3. Click "Load unpacked"
+4. Select the `dist/extension` directory
 
-## Found an issue or want to leave feedback
+## Use Cases
 
-Feel free to create a support thread on our [Discord](https://clerk.com/discord). Our support team will be happy to assist you in the `#support` channel.
+Signet powers a variety of applications in the Blaze ecosystem:
 
-## Connect with us
+- **OP_PREDICT**: A prediction market platform with instant UI feedback
+- **Token Transfer Applications**: Fast and efficient token movements
+- **NFT Marketplaces**: Seamless bidding and purchasing experiences
+- **DAOs**: Frictionless governance and voting
+- **DeFi Applications**: Trading, swapping, and liquidity provision without delays
 
-You can discuss ideas, ask questions, and meet others from the community in our [Discord](https://discord.com/invite/b5rXHjAg7A).
+## Documentation
 
-If you prefer, you can also find support through our [Twitter](https://twitter.com/ClerkDev), or you can [email](mailto:support@clerk.dev) us!
+For complete documentation, visit our [developer docs](https://docs.signet.wallet).
+
+## Contributing
+
+Contributions are welcome! Check out our [Contributing Guide](./CONTRIBUTING.md) to get started.
+
+## Community
+
+- [Discord](https://discord.gg/charisma-labs) - Join our developer community
+- [Twitter](https://twitter.com/signetwallet) - Follow for updates
+- [GitHub Discussions](https://github.com/charisma-labs/signet/discussions) - For questions and support
+
+## License
+
+Signet is [MIT licensed](./LICENSE).
