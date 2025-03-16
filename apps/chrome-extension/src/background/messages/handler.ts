@@ -14,6 +14,9 @@ import * as wallet from "../lib/wallet"
 import type { SeedPhrase, Account, CreateAccountOptions } from "../lib/wallet/types"
 import type { MessageAction } from "~shared/context/types"
 
+// Import Dexterity integration module
+import * as dexterity from "../lib/dexterity"
+
 interface MessageRequest {
   action: MessageAction;
   data?: any;
@@ -204,6 +207,48 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
 
       case "resetWallet":
         response = await wallet.resetWallet();
+        break;
+
+      case "deployTokenSubnet":
+        // Validate the token subnet parameters
+        if (!data?.tokenContract || !data?.versionName || !data?.versionNumber) {
+          throw new Error("Required parameters missing for deploying token subnet");
+        }
+
+        // Get the current account to get the private key
+        const { privateKey } = await wallet.getCurrentAccount();
+        if (!privateKey) {
+          throw new Error("No active wallet account");
+        }
+
+        // Use our refactored dexterity module to deploy the subnet contract
+        response = await dexterity.deployTokenSubnet(
+          {
+            tokenContract: data.tokenContract,
+            versionName: data.versionName,
+            versionNumber: data.versionNumber,
+            batchSize: data.batchSize || 200,
+            description: data.description
+          },
+          subnetRegistry.signer,  // Current signer address
+          privateKey              // Private key if available
+        );
+        break;
+
+      case "generateSubnetCode":
+        // Generate contract code without deploying (for preview)
+        if (!data?.tokenContract || !data?.versionName || !data?.versionNumber) {
+          throw new Error("Required parameters missing for generating subnet code");
+        }
+
+        // Use our dexterity module to generate the code with the current signer address
+        response = await dexterity.generateSubnetCode({
+          tokenContract: data.tokenContract,
+          versionName: data.versionName,
+          versionNumber: data.versionNumber,
+          batchSize: data.batchSize || 200,
+          description: data.description
+        }, subnetRegistry.signer); // Pass the current signer address
         break;
 
       case "processTx":

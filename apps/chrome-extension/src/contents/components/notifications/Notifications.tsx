@@ -35,11 +35,12 @@ export const Notifications: React.FC = () => {
 
   // Handle approval of permission request
   const handlePermissionApprove = () => {
+    console.log('Approving permission:', activePermission);
     if (!activePermission) return;
-    
+
     // Mark as processing to prevent showing another permission immediately
     setIsProcessing(true);
-    
+
     // Process the permission
     if (rememberChoice) {
       rememberPermission(activePermission.id, true);
@@ -50,7 +51,7 @@ export const Notifications: React.FC = () => {
     // Reset state
     setActivePermission(null);
     setRememberChoice(false);
-    
+
     // Allow processing new permissions after a small delay
     setTimeout(() => {
       setIsProcessing(false);
@@ -60,10 +61,10 @@ export const Notifications: React.FC = () => {
   // Handle denial of permission request
   const handlePermissionDeny = () => {
     if (!activePermission) return;
-    
+
     // Mark as processing to prevent showing another permission immediately
     setIsProcessing(true);
-    
+
     // Process the permission
     if (rememberChoice) {
       rememberPermission(activePermission.id, false);
@@ -74,7 +75,7 @@ export const Notifications: React.FC = () => {
     // Reset state
     setActivePermission(null);
     setRememberChoice(false);
-    
+
     // Allow processing new permissions after a small delay
     setTimeout(() => {
       setIsProcessing(false);

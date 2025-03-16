@@ -20,10 +20,14 @@ export enum MessageType {
   // Transaction operations
   CREATE_TRANSFER_TX = 'create_transfer_tx',
   SIGN_PREDICTION = 'sign_prediction',
-  
+
   // Mempool operations
   REQUEST_TRANSACTION_CUSTODY = 'request_transaction_custody',
-  SEARCH_MEMPOOL = 'search_mempool'
+  SEARCH_MEMPOOL = 'search_mempool',
+  
+  // Contract operations
+  DEPLOY_TOKEN_SUBNET = 'deploy_token_subnet',
+  GENERATE_SUBNET_CODE = 'generate_subnet_code'
 }
 
 /**

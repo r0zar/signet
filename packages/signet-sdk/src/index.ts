@@ -235,13 +235,78 @@ export async function searchMempool(
             type: MessageType.SEARCH_MEMPOOL,
             data: { criteria, subnetId }
         });
-        
+
         return response.data;
     } catch (error) {
         console.error('Failed to search mempool:', error);
-        return { 
-            success: false, 
+        return {
+            success: false,
             transactions: [],
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Interface for token subnet deployment parameters
+ */
+export interface TokenSubnetParams {
+    tokenContract: string;  // Original token contract ID to wrap
+    versionName: string;    // Subnet name (lowercase, no spaces)
+    versionNumber: string;  // Version like v1, rc1
+    batchSize: number;      // Max operations per batch
+    description?: string;   // Optional description
+}
+
+/**
+ * Interface for deployment results
+ */
+export interface DeploymentResult {
+    success: boolean;
+    error?: string;
+    txId?: string;
+    contractId?: string;
+}
+
+/**
+ * Deploy a token subnet wrapper contract
+ * @param params The subnet parameters
+ * @returns A promise resolving to the deployment result
+ */
+export async function deployTokenSubnet(params: TokenSubnetParams): Promise<DeploymentResult> {
+    try {
+        const response = await request<TokenSubnetParams, DeploymentResult>({
+            type: MessageType.DEPLOY_TOKEN_SUBNET,
+            data: params
+        }, 0); // No timeout - wait for user confirmation
+
+        return response.data;
+    } catch (error) {
+        console.error('Failed to deploy token subnet:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Generate subnet wrapper contract code without deploying
+ * Useful for previewing code before deployment
+ */
+export async function generateSubnetCode(params: TokenSubnetParams): Promise<any> {
+    try {
+        const response = await request<TokenSubnetParams, any>({
+            type: MessageType.GENERATE_SUBNET_CODE,
+            data: params
+        });
+        console.log(response)
+
+        return response.data;
+    } catch (error) {
+        console.error('Failed to generate subnet code:', error);
+        return {
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
         };
     }
@@ -282,12 +347,12 @@ export async function requestTransactionCustody(
             type: MessageType.REQUEST_TRANSACTION_CUSTODY,
             data: { criteria, subnetId }
         });
-        
+
         return response.data;
     } catch (error) {
         console.error('Failed to request transaction custody:', error);
-        return { 
-            success: false, 
+        return {
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
         };
     }

@@ -635,6 +635,41 @@
           <button id="request-custody" disabled class="disabled">Request Transaction Custody</button>
         </div>
       </div>
+      
+      <div id="subnet-deploy-actions">
+        <h4 class="panel-title">Subnet Deployment</h4>
+        <div style="margin-bottom: 8px; color: var(--steel-light); font-size: 0.85rem;">
+          Deploy subnet wrapper contracts for tokens to enable off-chain transactions and predictive markets.
+        </div>
+        <div class="sdk-actions">
+          <button id="generate-subnet-code">Generate Subnet Code</button>
+          <button id="deploy-subnet">Deploy Subnet Wrapper</button>
+          <div class="subnet-form" style="display: none; margin-top: 10px;">
+            <div style="margin-bottom: 8px;">
+              <input type="text" id="token-contract" placeholder="Token Contract ID (e.g. SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.token-abc)"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <input type="text" id="version-name" placeholder="Version Name (e.g. liquid-fast)"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <input type="text" id="version-number" placeholder="Version Number (e.g. v1)"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <input type="number" id="batch-size" placeholder="Batch Size (50-300)" value="200"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <textarea id="description" placeholder="Description (optional)"
+                style="width: 100%; padding: 8px; background: rgba(33, 38, 45, 0.8); border: 1px solid rgba(125, 249, 255, 0.3); color: white; border-radius: 4px; min-height: 60px;"></textarea>
+            </div>
+            <button id="submit-subnet-deploy" class="primary">Deploy Subnet</button>
+            <button id="submit-generate-code" class="primary">Preview Code</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="log-panel">

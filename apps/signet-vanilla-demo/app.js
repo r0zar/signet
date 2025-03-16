@@ -10,7 +10,9 @@ import {
   requestTransactionCustody,
   searchMempool,
   getSubnetIds,
-  getSubnetData
+  getSubnetData,
+  deployTokenSubnet,
+  generateSubnetCode
 } from 'signet-sdk';
 
 // State tracking
@@ -22,7 +24,7 @@ let lastTransactionSignature = null; // For custody demonstration
 
 // Message tracking for debugging
 const messageTracker = {
-  counts: { extension: 0, status: 0, balance: 0, transfer: 0, mining: 0, custody: 0, search: 0 },
+  counts: { extension: 0, status: 0, balance: 0, transfer: 0, mining: 0, custody: 0, search: 0, subnet: 0 },
   track(type) {
     if (type === MessageType.CHECK_EXTENSION_INSTALLED) {
       this.counts.extension++;
@@ -38,6 +40,8 @@ const messageTracker = {
       this.counts.custody++;
     } else if (type === MessageType.SEARCH_MEMPOOL) {
       this.counts.search++;
+    } else if (type === MessageType.DEPLOY_TOKEN_SUBNET || type === MessageType.GENERATE_SUBNET_CODE) {
+      this.counts.subnet++;
     }
 
     // Update the debug badge - simplified
@@ -45,7 +49,7 @@ const messageTracker = {
     if (badge) {
       const total = this.counts.extension + this.counts.status +
         this.counts.balance + this.counts.transfer + this.counts.mining +
-        this.counts.custody + this.counts.search;
+        this.counts.custody + this.counts.search + this.counts.subnet;
       badge.textContent = `API Calls: ${total}`;
     }
   }
@@ -703,8 +707,180 @@ function displayMessage(data) {
   responseElement.textContent = JSON.stringify(data, null, 2);
 }
 
+// Initialize subnet deployment handlers
+function initSubnetDeploymentHandlers() {
+  // Show/hide subnet form
+  const deployBtn = document.getElementById('deploy-subnet');
+  const generateBtn = document.getElementById('generate-subnet-code');
+  const subnetForm = document.querySelector('.subnet-form');
+  
+  if (deployBtn && generateBtn && subnetForm) {
+    // Toggle form display
+    deployBtn.addEventListener('click', () => {
+      subnetForm.style.display = subnetForm.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    generateBtn.addEventListener('click', () => {
+      subnetForm.style.display = subnetForm.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Handle generate code button
+    const generateCodeBtn = document.getElementById('submit-generate-code');
+    if (generateCodeBtn) {
+      generateCodeBtn.addEventListener('click', async () => {
+        const params = getSubnetParams();
+        if (!validateSubnetParams(params)) return;
+        
+        try {
+          const result = await generateSubnetCode(params);
+          
+          displayMessage({
+            type: 'Generate Subnet Code',
+            data: result
+          });
+          
+          // Enable the deploy button if code generation was successful
+          if (result.success) {
+            const deployBtn = document.getElementById('submit-subnet-deploy');
+            if (deployBtn) {
+              deployBtn.removeAttribute('disabled');
+              deployBtn.classList.remove('disabled');
+            }
+          }
+        } catch (error) {
+          displayMessage({
+            type: 'Error',
+            error: error.message || 'Failed to generate subnet code'
+          });
+        }
+      });
+    }
+    
+    // Handle deploy subnet button
+    const deploySubnetBtn = document.getElementById('submit-subnet-deploy');
+    if (deploySubnetBtn) {
+      deploySubnetBtn.addEventListener('click', async () => {
+        const params = getSubnetParams();
+        if (!validateSubnetParams(params)) return;
+        
+        try {
+          const result = await deployTokenSubnet(params);
+          
+          displayMessage({
+            type: 'Deploy Token Subnet',
+            data: result
+          });
+          
+          // Show success message and hide form if deployment was successful
+          if (result.success) {
+            // Clear form
+            // document.getElementById('token-contract').value = '';
+            // document.getElementById('version-name').value = '';
+            // document.getElementById('version-number').value = '';
+            // document.getElementById('description').value = '';
+            
+            // Hide form after successful deployment
+            // subnetForm.style.display = 'none';
+            
+            // Show success badge
+            const subnetDeployActions = document.getElementById('subnet-deploy-actions');
+            if (subnetDeployActions) {
+              subnetDeployActions.classList.add('enabled');
+            }
+          }
+        } catch (error) {
+          displayMessage({
+            type: 'Error',
+            error: error.message || 'Failed to deploy token subnet'
+          });
+        }
+      });
+    }
+  }
+}
+
+// Helper function to get subnet parameters from form
+function getSubnetParams() {
+  return {
+    tokenContract: document.getElementById('token-contract').value,
+    versionName: document.getElementById('version-name').value,
+    versionNumber: document.getElementById('version-number').value,
+    batchSize: parseInt(document.getElementById('batch-size').value) || 200,
+    description: document.getElementById('description').value
+  };
+}
+
+// Helper function to validate subnet parameters
+function validateSubnetParams(params) {
+  // Check if required fields are filled
+  if (!params.tokenContract) {
+    displayMessage({
+      type: 'Error',
+      error: 'Token Contract ID is required'
+    });
+    return false;
+  }
+  
+  // Validate tokenContract format (must be address.contract-name)
+  if (!params.tokenContract.includes('.')) {
+    displayMessage({
+      type: 'Error',
+      error: 'Token Contract ID must be in format: address.contract-name'
+    });
+    return false;
+  }
+  
+  // Validate versionName
+  if (!params.versionName) {
+    displayMessage({
+      type: 'Error',
+      error: 'Version Name is required'
+    });
+    return false;
+  }
+  
+  // Validate versionName format (lowercase, no spaces)
+  if (!/^[a-z0-9-]+$/.test(params.versionName)) {
+    displayMessage({
+      type: 'Error',
+      error: 'Version Name must only contain lowercase letters, numbers, and hyphens'
+    });
+    return false;
+  }
+  
+  // Validate versionNumber
+  if (!params.versionNumber) {
+    displayMessage({
+      type: 'Error',
+      error: 'Version Number is required'
+    });
+    return false;
+  }
+  
+  // Validate versionNumber format (vX or rcX)
+  if (!/^(v|rc)\d+(\.\d+)*$/.test(params.versionNumber)) {
+    displayMessage({
+      type: 'Error',
+      error: 'Version Number must start with v or rc followed by numbers (e.g., v1, rc1, v1.0)'
+    });
+    return false;
+  }
+  
+  // Validate batchSize
+  if (params.batchSize < 50 || params.batchSize > 300) {
+    displayMessage({
+      type: 'Error',
+      error: 'Batch Size must be between 50 and 300'
+    });
+    return false;
+  }
+  
+  return true;
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   init();
   initMempoolHandlers();
+  initSubnetDeploymentHandlers();
 });

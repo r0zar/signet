@@ -20,6 +20,8 @@ export type MessageAction =
   | "findTransactionBySignature"
   | "requestTransactionCustody"
   | "searchMempool"
+  | "deployTokenSubnet"
+  | "generateSubnetCode"
   // Wallet related actions
   | "initializeWallet"
   | "checkWalletInitialized"

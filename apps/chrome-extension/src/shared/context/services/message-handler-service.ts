@@ -49,7 +49,9 @@ export class MessageHandlerService {
       MessageType.CREATE_TRANSFER_TX,
       MessageType.SIGN_PREDICTION,
       MessageType.REQUEST_TRANSACTION_CUSTODY,
-      MessageType.SEARCH_MEMPOOL
+      MessageType.SEARCH_MEMPOOL,
+      MessageType.DEPLOY_TOKEN_SUBNET,
+      MessageType.GENERATE_SUBNET_CODE
     ].includes(type)
   }
 
@@ -88,6 +90,14 @@ export class MessageHandlerService {
 
       case MessageType.SEARCH_MEMPOOL:
         await this.handleSearchMempool(message)
+        break
+        
+      case MessageType.DEPLOY_TOKEN_SUBNET:
+        await this.handleDeployTokenSubnet(message)
+        break
+        
+      case MessageType.GENERATE_SUBNET_CODE:
+        await this.handleGenerateSubnetCode(message)
         break
 
       default:
@@ -306,6 +316,84 @@ export class MessageHandlerService {
         code: 'REQUEST_CUSTODY_ERROR',
         message: error instanceof Error ? error.message : 'Failed to transfer transaction custody'
       })
+    }
+  }
+  
+  /**
+   * Handle DEPLOY_TOKEN_SUBNET message
+   * Deploys a token subnet wrapper contract
+   */
+  async handleDeployTokenSubnet(message: Message): Promise<void> {
+    try {
+      // Extract parameters from the message
+      const params = message.data as {
+        tokenContract: string;
+        versionName: string;
+        versionNumber: string;
+        batchSize: number;
+        description?: string;
+      };
+      
+      // Validate basic parameters
+      if (!params.tokenContract || !params.versionName || !params.versionNumber) {
+        throw new Error("Required parameters missing: tokenContract, versionName, and versionNumber are required");
+      }
+      
+      // Forward to background script for processing
+      const deploymentResult = await this.sendMessage<{
+        success: boolean;
+        txId?: string;
+        contractId?: string;
+        error?: string;
+      }>("deployTokenSubnet", params);
+      
+      // Refresh blockchain state after deployment
+      if (this.blockchainSlice) {
+        this.blockchainSlice.refreshStatus();
+      }
+      
+      respond(message, deploymentResult);
+    } catch (error) {
+      respond(message, undefined, {
+        code: 'DEPLOY_TOKEN_SUBNET_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to deploy token subnet'
+      });
+    }
+  }
+  
+  /**
+   * Handle GENERATE_SUBNET_CODE message
+   * Generates subnet wrapper contract code without deploying
+   */
+  async handleGenerateSubnetCode(message: Message): Promise<void> {
+    try {
+      // Extract parameters from the message
+      const params = message.data as {
+        tokenContract: string;
+        versionName: string;
+        versionNumber: string;
+        batchSize: number;
+        description?: string;
+      };
+      
+      // Validate basic parameters
+      if (!params.tokenContract || !params.versionName || !params.versionNumber) {
+        throw new Error("Required parameters missing: tokenContract, versionName, and versionNumber are required");
+      }
+      
+      // Forward to background script for processing
+      const codeResult = await this.sendMessage<{
+        success: boolean;
+        code?: string;
+        error?: string;
+      }>("generateSubnetCode", params);
+      
+      respond(message, codeResult);
+    } catch (error) {
+      respond(message, undefined, {
+        code: 'GENERATE_SUBNET_CODE_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to generate subnet code'
+      });
     }
   }
 }

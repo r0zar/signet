@@ -51,18 +51,18 @@ export function SignetController() {
   }, [error]);
 
   // Show controller when transactions are pending in any subnet
-  useEffect(() => {
-    if (status) {
-      // Check if any subnet has pending transactions
-      const hasPendingTx = Object.values(status).some(
-        subnetStatus => subnetStatus.txQueue && subnetStatus.txQueue.length > 0
-      );
+  // useEffect(() => {
+  //   if (status) {
+  //     // Check if any subnet has pending transactions
+  //     const hasPendingTx = Object.values(status).some(
+  //       subnetStatus => subnetStatus.txQueue && subnetStatus.txQueue.length > 0
+  //     );
 
-      if (hasPendingTx) {
-        setVisible(true);
-      }
-    }
-  }, [status]);
+  //     if (hasPendingTx) {
+  //       setVisible(true);
+  //     }
+  //   }
+  // }, [status]);
 
   return (
     <div className="signet-container" style={{ pointerEvents: 'none' }}>
