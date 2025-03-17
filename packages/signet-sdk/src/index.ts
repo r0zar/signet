@@ -357,3 +357,80 @@ export async function requestTransactionCustody(
         };
     }
 }
+
+/**
+ * Interface for Dexterity Vault
+ */
+export interface DexterityVault {
+    contractId: string;
+    [key: string]: any;
+}
+
+/**
+ * Interface for Dexterity Opcode
+ */
+export interface DexterityOpcode {
+    code: number;
+    [key: string]: any;
+}
+
+/**
+ * Interface for Dexterity Hop
+ */
+export interface DexterityHop {
+    vault: DexterityVault;
+    opcode: DexterityOpcode;
+    [key: string]: any;
+}
+
+/**
+ * Interface for Dexterity Route
+ */
+export interface DexterityRoute {
+    hops: DexterityHop[];
+    [key: string]: any;
+}
+
+/**
+ * Interface for Dexterity swap parameters
+ */
+export interface ExecuteSwapParams {
+    route: DexterityRoute;
+    amount: number;
+    options?: {
+        disablePostConditions?: boolean;
+        sponsored?: boolean;
+        [key: string]: any;
+    };
+}
+
+/**
+ * Interface for Dexterity swap response
+ */
+export interface ExecuteSwapResponse {
+    success: boolean;
+    txId?: string;
+    error?: string;
+}
+
+/**
+ * Execute a Dexterity swap via the Signet extension
+ * @param params The swap parameters
+ * @returns A promise resolving to the swap response
+ */
+export async function executeDexSwap(params: ExecuteSwapParams): Promise<ExecuteSwapResponse> {
+    try {
+        const response = await request<ExecuteSwapParams, ExecuteSwapResponse>({
+            type: MessageType.EXECUTE_DEX_SWAP,
+            data: params
+        }, 0); // No timeout - wait for user confirmation
+        
+        return response.data;
+    } catch (error) {
+        console.error('Failed to execute Dexterity swap:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}

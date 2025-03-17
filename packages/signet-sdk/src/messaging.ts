@@ -20,6 +20,9 @@ export enum MessageType {
   // Transaction operations
   CREATE_TRANSFER_TX = 'create_transfer_tx',
   SIGN_PREDICTION = 'sign_prediction',
+  
+  // Dexterity operations
+  EXECUTE_DEX_SWAP = 'execute_dex_swap',
 
   // Mempool operations
   REQUEST_TRANSACTION_CUSTODY = 'request_transaction_custody',

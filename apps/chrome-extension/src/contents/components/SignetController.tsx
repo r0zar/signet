@@ -103,7 +103,7 @@ function MinimizedButton({
       style={{
         position: 'fixed',
         top: '12px',
-        left: '14px',
+        right: '14px',
         width: '40px',
         height: '40px',
         borderRadius: '50%',
@@ -314,8 +314,8 @@ export function ControlPanel({ onClose }: { onClose: () => void }) {
       transition={{ duration: 0.3 }}
       style={{
         position: 'fixed',
-        top: '32px',
-        left: '20px',
+        top: '30px', // 418px look like they connect, btw
+        right: '177px',
         width: '360px',
         background: `linear-gradient(180deg, #0D1117 0%, #010409 100%)`,
         borderRadius: '6px',
