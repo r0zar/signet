@@ -12,7 +12,7 @@ import type {
 import { Transaction } from './transaction';
 import { Mempool } from './mempool';
 import { buildDepositTxOptions, buildWithdrawTxOptions } from './utils';
-import { createWelshDomain, createTransferMessage } from './signatures';
+import { createWelshDomain, createTransferMessage, createClaimRewardMessage, createWelshPredictionDomain } from './signatures';
 import { getCurrentAccount } from './wallet';
 import type { Status } from '~shared/context/types';
 
@@ -300,6 +300,22 @@ export class Subnet {
             console.error('Transfer signature verification failed:', error);
             return false;
         }
+    }
+
+    async generateClaimSignature(message: ClaimReward): Promise<string> {
+        // Get the active account from wallet
+        const activeAccount = await getCurrentAccount();
+
+        if (!activeAccount || !activeAccount.privateKey) {
+            throw new Error('No active account or private key found');
+        }
+
+        const signature = await signStructuredData({
+            domain: createWelshPredictionDomain(),
+            message: createClaimRewardMessage(message),
+            privateKey: activeAccount.privateKey
+        });
+        return signature;
     }
 
     async verifyClaimSignature(claim: ClaimReward): Promise<boolean> {

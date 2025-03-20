@@ -9,7 +9,6 @@ import { Notifications } from "./components/Notifications"
 
 export const config: PlasmoCSConfig = {
   matches: [
-    "http://localhost:*/*",
     "https://bold-sheep-31.clerk.accounts.dev/*",
     "https://signet-omega.vercel.app/",
     "https://www.oppredict.com/*",

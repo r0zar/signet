@@ -248,7 +248,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
     // 1. First determine the actual tokens in the current vault
     // 2. Then figure out the direction based on opcode
     // 3. For hops after the first, ensure the input token matches the previous hop's output
-    
+
     // Collect token metadata from different places
     // For tokens in the vault (A/B or X/Y)
     let tokenA = {
@@ -256,7 +256,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
       image: null as string | null,
       decimals: 6 // Default decimals
     };
-    
+
     let tokenB = {
       symbol: null as string | null,
       image: null as string | null,
@@ -286,7 +286,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
       tokenB.image = hop.vault.tokenY.image;
       tokenB.decimals = hop.vault.tokenY.decimals || 6;
     }
-    
+
     // Check liquidity array
     if (!tokenA.symbol && Array.isArray(hop.vault?.liquidity) && hop.vault.liquidity.length >= 1) {
       tokenA.symbol = hop.vault.liquidity[0].symbol;
@@ -305,10 +305,10 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
 
     // Now determine input and output tokens based on operation code
     let fromToken, toToken;
-    
+
     // Determine if this is a SWAP_A_TO_B (code 1) or SWAP_B_TO_A (code 2)
     const isSwapAToB = hop.opcode?.code !== 2; // Default to A→B if not specified
-    
+
     if (isSwapAToB) {
       // A→B swap
       fromToken = { ...tokenA };
@@ -318,17 +318,17 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
       fromToken = { ...tokenB };
       toToken = { ...tokenA };
     }
-    
+
     // For subsequent hops in a multi-hop route, we might need to override 
     // the fromToken to match the previous hop's toToken for continuity
-    if (index > 0 && allHops[index-1]) {
+    if (index > 0 && allHops[index - 1]) {
       // Look up previous hop's tokens
-      const prevHop = allHops[index-1];
+      const prevHop = allHops[index - 1];
       let prevToToken;
-      
+
       // Determine the output token of the previous hop
       const isPrevSwapAToB = prevHop.opcode?.code !== 2;
-      
+
       // We'll use the explicit tokenIn/tokenOut if available for more precision
       if (prevHop.tokenOut) {
         prevToToken = prevHop.tokenOut.symbol;
@@ -341,11 +341,11 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
       } else if (!isPrevSwapAToB && prevHop.vault?.tokenX) {
         prevToToken = prevHop.vault.tokenX.symbol;
       } else if (Array.isArray(prevHop.vault?.liquidity)) {
-        prevToToken = isPrevSwapAToB 
-          ? prevHop.vault.liquidity[1]?.symbol 
+        prevToToken = isPrevSwapAToB
+          ? prevHop.vault.liquidity[1]?.symbol
           : prevHop.vault.liquidity[0]?.symbol;
       }
-      
+
       // If we can determine that this doesn't match our current input token,
       // we have an inconsistency in the route. Let's provide a warning.
       if (prevToToken && fromToken.symbol !== prevToToken) {
@@ -354,14 +354,14 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
         // We could also add a warning flag here
       }
     }
-    
+
     // Direct tokenIn/tokenOut data takes precedence if available
     if (hop.tokenIn) {
       fromToken.symbol = hop.tokenIn.symbol || fromToken.symbol;
       fromToken.image = hop.tokenIn.image || fromToken.image;
       fromToken.decimals = hop.tokenIn.decimals || fromToken.decimals;
     }
-    
+
     if (hop.tokenOut) {
       toToken.symbol = hop.tokenOut.symbol || toToken.symbol;
       toToken.image = hop.tokenOut.image || toToken.image;
@@ -393,7 +393,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
       const symbol = fromToken.symbol || "?";
       fromToken.image = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="%23334155"/><text x="12" y="16" font-family="Arial" font-size="10" fill="%23f8fafc" text-anchor="middle">${symbol.charAt(0)}</text></svg>`;
     }
-    
+
     if (!toToken.image) {
       const symbol = toToken.symbol || "?";
       toToken.image = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="%23334155"/><text x="12" y="16" font-family="Arial" font-size="10" fill="%23f8fafc" text-anchor="middle">${symbol.charAt(0)}</text></svg>`;
@@ -422,15 +422,15 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
           {/* From Token */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ 
-              width: '24px', 
-              height: '24px', 
+            <div style={{
+              width: '24px',
+              height: '24px',
               marginRight: '6px',
               borderRadius: '50%',
               overflow: 'hidden',
               backgroundColor: '#334155'
             }}>
-              <img 
+              <img
                 src={fromToken.image || ''}
                 alt={fromToken.symbol || ''}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -460,20 +460,20 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
               )}
             </div>
           </div>
-          
+
           <span style={{ padding: '0 8px', color: '#7DF9FF' }}>→</span>
-          
+
           {/* To Token */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ 
-              width: '24px', 
-              height: '24px', 
+            <div style={{
+              width: '24px',
+              height: '24px',
               marginRight: '6px',
               borderRadius: '50%',
               overflow: 'hidden',
               backgroundColor: '#334155'
             }}>
-              <img 
+              <img
                 src={toToken.image || ''}
                 alt={toToken.symbol || ''}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -511,10 +511,10 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
   // Helper to format token amounts with proper decimal adjustment
   const formatTokenAmount = (value: number, decimals: number = 6): string => {
     if (value === null || value === undefined) return "";
-    
+
     // Adjust for token decimals (convert from smallest units to standard units)
     const adjustedValue = value / Math.pow(10, decimals);
-    
+
     // Different formatting based on size
     if (adjustedValue < 0.00001) return adjustedValue.toExponential(2);
     if (adjustedValue < 0.001) return adjustedValue.toFixed(6);
@@ -578,7 +578,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
           {/* Display overall route summary if multi-hop */}
           {route.hops.length > 1 && route.tokenIn && route.tokenOut && (
             <div style={{
-              display: 'flex', 
+              display: 'flex',
               alignItems: 'center',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               borderRadius: '4px',
@@ -587,16 +587,16 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
               borderLeft: '3px solid #7DF9FF'
             }}>
               {/* Starting token icon */}
-              <div style={{ 
-                width: '20px', 
-                height: '20px', 
+              <div style={{
+                width: '20px',
+                height: '20px',
                 marginRight: '6px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 backgroundColor: '#334155',
                 flexShrink: 0
               }}>
-                <img 
+                <img
                   src={route.tokenIn.image || ''}
                   alt={route.tokenIn.symbol || ''}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -608,7 +608,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
                   }}
                 />
               </div>
-              
+
               <span style={{
                 fontWeight: 'bold',
                 color: '#FFF',
@@ -616,24 +616,24 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
               }}>
                 {route.tokenIn.symbol || "Starting Token"}
               </span>
-              
-              <span style={{ 
-                padding: '0 8px', 
+
+              <span style={{
+                padding: '0 8px',
                 color: '#7DF9FF',
                 fontWeight: 'bold'
               }}>→</span>
-              
+
               {/* Ending token icon */}
-              <div style={{ 
-                width: '20px', 
-                height: '20px', 
+              <div style={{
+                width: '20px',
+                height: '20px',
                 marginRight: '6px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 backgroundColor: '#334155',
                 flexShrink: 0
               }}>
-                <img 
+                <img
                   src={route.tokenOut.image || ''}
                   alt={route.tokenOut.symbol || ''}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -645,7 +645,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
                   }}
                 />
               </div>
-              
+
               <span style={{
                 fontWeight: 'bold',
                 color: '#FFF',
@@ -653,7 +653,7 @@ export const SwapContent: React.FC<SwapPermissionContentProps> = ({
               }}>
                 {route.tokenOut.symbol || "Final Token"}
               </span>
-              
+
               {/* Show total amount if available */}
               {amount !== undefined && route.tokenIn.decimals !== undefined && (
                 <span style={{
@@ -766,12 +766,12 @@ export const ClaimRewardsContent: React.FC<PermissionContentProps> = ({ origin, 
 
       <FeatureExplanation
         icon={PermissionIcons.wallet}
-        text="Receive funds in your wallet"
+        text="Recieve reward funds in your wallet"
       />
 
       <FeatureExplanation
         icon={PermissionIcons.transfer}
-        text="Update prediction NFT status"
+        text="Redeem prediction receipt NFT"
       />
     </div>
 

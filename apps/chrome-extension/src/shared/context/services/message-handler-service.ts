@@ -266,6 +266,7 @@ export class MessageHandlerService {
   async handleClaimRewards(message: Message): Promise<void> {
     try {
       const data = message.data as any
+      console.log(data)
       const result = await this.sendMessage<{ success: boolean, transaction: Transfer }>("createClaimRewardTx", data)
 
       if (this.blockchainSlice) {

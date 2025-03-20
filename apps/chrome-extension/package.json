@@ -1,7 +1,7 @@
 {
   "name": "signet-signer",
   "displayName": "Signet Signer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A secure wallet for connecting to decentralized applications and signing blockchain transactions",
   "author": "Charisma Labs",
   "scripts": {
@@ -58,16 +58,16 @@
     "name": "Signet Signer",
     "description": "A secure wallet for connecting to decentralized applications and signing blockchain transactions",
     "permissions": [
-      "cookies",
       "storage",
-      "scripting",
       "activeTab"
     ],
     "host_permissions": [
       "$CLERK_FRONTEND_API/*",
       "$PLASMO_PUBLIC_CLERK_SYNC_HOST/*",
+      "https://bold-sheep-31.clerk.accounts.dev/*",
+      "https://signet-omega.vercel.app/",
       "https://www.oppredict.com/*",
-      "http://localhost:*/*"
+      "https://charisma.rocks/*"
     ],
     "content_security_policy": {
       "extension_pages": "script-src 'self'; object-src 'self'",

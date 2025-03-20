@@ -315,6 +315,17 @@ export class SubnetRegistry {
   }
 
   /**
+   * Generate a signature for a message using the appropriate subnet
+   */
+  public async generateClaimSignature(message: any, subnetId: string): Promise<string> {
+    if (!this.subnets.has(subnetId)) {
+      throw new Error(`Subnet not found: ${subnetId}`);
+    }
+
+    return await this.subnets.get(subnetId).generateClaimSignature(message);
+  }
+
+  /**
    * Refresh balances for an address across all subnets
    */
   public async refreshBalances(address?: string): Promise<void> {

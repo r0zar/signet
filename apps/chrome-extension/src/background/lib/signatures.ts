@@ -39,7 +39,7 @@ export function createPredictionMessage(message: PredictionMessage) {
 
 export function createClaimRewardMessage(message: ClaimRewardMessage) {
     return Cl.tuple({
-        receipt_id: Cl.uint(message.receiptId),
+        "receipt-id": Cl.uint(message.receiptId),
         nonce: Cl.uint(message.nonce)
     });
 }

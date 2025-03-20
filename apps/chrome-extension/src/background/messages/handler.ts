@@ -351,9 +351,8 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         }
 
         // Sign the transfer using the specified subnet
-        const receiptTransferSignature = await subnetRegistry.generateTransferSignature({
-          to: data.to,
-          amount: data.amount,
+        const receiptTransferSignature = await subnetRegistry.generateClaimSignature({
+          receiptId: data.receiptId,
           nonce: data.nonce
         }, data.subnetId);
 
