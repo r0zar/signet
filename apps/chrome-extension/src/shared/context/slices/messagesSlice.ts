@@ -107,12 +107,15 @@ export function useMessagesSlice(blockchainSlice: BlockchainSlice): MessagesSlic
     const originalMessage = messages.find(m => m.id === request.messageId)
     if (!originalMessage) return
 
+    // Immediately remove from pending permissions
+    setPendingPermissions(prev => prev.filter(p => p.id !== requestId))
+    
+    // Then handle the approved message asynchronously
     try {
-      // Handle the approved message
       await messageHandlerService.handleMessage(originalMessage)
-    } finally {
-      // Remove from pending permissions
-      setPendingPermissions(prev => prev.filter(p => p.id !== requestId))
+    } catch (error) {
+      console.error('Error handling approved message:', error)
+      // No need to set pending permissions again - the UI has already been updated
     }
   }
 
@@ -126,7 +129,10 @@ export function useMessagesSlice(blockchainSlice: BlockchainSlice): MessagesSlic
     const originalMessage = messages.find(m => m.id === request.messageId)
     if (!originalMessage) return
 
-    // Respond with permission denied error
+    // Immediately remove from pending permissions
+    setPendingPermissions(prev => prev.filter(p => p.id !== requestId))
+    
+    // Then respond with permission denied error
     respond(originalMessage, undefined, {
       code: 'PERMISSION_DENIED',
       message: 'Permission denied by user'
@@ -134,9 +140,6 @@ export function useMessagesSlice(blockchainSlice: BlockchainSlice): MessagesSlic
 
     // Refresh status to ensure UI is consistent
     messageHandlerService.refreshStatus()
-
-    // Remove from pending permissions
-    setPendingPermissions(prev => prev.filter(p => p.id !== requestId))
   }
 
   // Remember permission for future use
@@ -148,14 +151,34 @@ export function useMessagesSlice(blockchainSlice: BlockchainSlice): MessagesSlic
       return
     }
 
-    // Save the permission
-    await permissionService.savePermission(request, allow)
+    // Immediately remove from pending permissions to dismiss UI
+    setPendingPermissions(prev => prev.filter(p => p.id !== requestId))
 
-    // Process the permission request
-    if (allow) {
-      approvePermission(requestId)
-    } else {
-      denyPermission(requestId)
+    // Save the permission asynchronously
+    try {
+      await permissionService.savePermission(request, allow)
+      
+      // Process the permission request - we're using the existing functions but the UI is already updated
+      if (allow) {
+        // We need to get the message again since we're calling directly
+        const originalMessage = messages.find(m => m.id === request.messageId)
+        if (originalMessage) {
+          await messageHandlerService.handleMessage(originalMessage)
+        }
+      } else {
+        // Find the original message
+        const originalMessage = messages.find(m => m.id === request.messageId)
+        if (originalMessage) {
+          respond(originalMessage, undefined, {
+            code: 'PERMISSION_DENIED',
+            message: 'Permission denied by user'
+          })
+          messageHandlerService.refreshStatus()
+        }
+      }
+    } catch (error) {
+      console.error('Error saving permission:', error)
+      // UI is already updated, so we don't need to restore the pending permission
     }
   }
 

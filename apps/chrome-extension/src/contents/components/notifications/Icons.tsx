@@ -41,6 +41,20 @@ export const PermissionIcons = {
       <path d="M7 7H17V17" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  swap: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 3L20 7L16 11" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 7H20" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 21L4 17L8 13" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 17H4" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  dexterity: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 9H20M4 15H20" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 4L9 20M15 4L15 20" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   warning: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 9V14" stroke="#FF9500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -87,6 +101,30 @@ export const CustomIcons = {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M7 17L17 7" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M7 7H17V17" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  createSwap: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 3L20 7L16 11" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 7H20" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 21L4 17L8 13" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 17H4" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  signPrediction: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12Z" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 12L11 15L16 9" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 5.5L15 5.5" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 19L8 17" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M18 19L16 17" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  claimRewards: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 15C15.866 15 19 11.866 19 8C19 4.13401 15.866 1 12 1C8.13401 1 5 4.13401 5 8C5 11.866 8.13401 15 12 15Z" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.21 13.89L7 23L12 20L17 23L15.79 13.88" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 8L13 6.5L12 5L11 6.5L12 8Z" stroke="#7DF9FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   searchMempool: (

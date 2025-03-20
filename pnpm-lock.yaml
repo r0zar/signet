@@ -67,8 +67,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       dexterity-sdk:
-        specifier: ^0.8.24
-        version: 0.8.24
+        specifier: ^0.8.25
+        version: 0.8.25
       framer-motion:
         specifier: ^12.4.10
         version: 12.4.10(react-dom@18.2.0)(react@18.2.0)
@@ -5878,8 +5878,8 @@ packages:
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
     dev: true
 
-  /dexterity-sdk@0.8.24:
-    resolution: {integrity: sha512-Bnx8/J/KyNK+T5VtHgR3/Sxlk7vxBMwiumW7Ti4MRvaRXdLj8ML3lkFZDTDt9kZ3leO1M1rXrJ2KLv1DvSfgCQ==}
+  /dexterity-sdk@0.8.25:
+    resolution: {integrity: sha512-+2qqWvsLKqlPQWVbowpq6pfAhvI6TGPJo7uuKmgwmHdqdoZKfrWLC2gv9nHxiPpTCfhZJzb+qL6pJ/5nEUlj4w==}
     hasBin: true
     dependencies:
       '@stacks/blockchain-api-client': 8.4.0

@@ -94,7 +94,6 @@ export class SubnetRegistry {
         balances[contractId] = await subnet.getBalance(userAddress)
       }
     }
-    console.log(balances)
 
     return balances;
   }

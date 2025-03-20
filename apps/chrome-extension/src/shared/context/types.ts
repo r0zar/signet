@@ -20,8 +20,10 @@ export type MessageAction =
   | "findTransactionBySignature"
   | "requestTransactionCustody"
   | "searchMempool"
+  // Dex related actions
   | "deployTokenSubnet"
   | "generateSubnetCode"
+  | "executeDexSwap"
   // Wallet related actions
   | "initializeWallet"
   | "checkWalletInitialized"

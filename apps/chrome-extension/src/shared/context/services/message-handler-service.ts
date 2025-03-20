@@ -48,10 +48,12 @@ export class MessageHandlerService {
       MessageType.GET_BALANCES,
       MessageType.CREATE_TRANSFER_TX,
       MessageType.SIGN_PREDICTION,
+      MessageType.CLAIM_REWARDS,
       MessageType.REQUEST_TRANSACTION_CUSTODY,
       MessageType.SEARCH_MEMPOOL,
       MessageType.DEPLOY_TOKEN_SUBNET,
-      MessageType.GENERATE_SUBNET_CODE
+      MessageType.GENERATE_SUBNET_CODE,
+      MessageType.EXECUTE_DEX_SWAP
     ].includes(type)
   }
 
@@ -84,6 +86,10 @@ export class MessageHandlerService {
         await this.handleSignPrediction(message)
         break
 
+      case MessageType.CLAIM_REWARDS:
+        await this.handleClaimRewards(message)
+        break
+
       case MessageType.REQUEST_TRANSACTION_CUSTODY:
         await this.handleRequestTransactionCustody(message)
         break
@@ -91,13 +97,17 @@ export class MessageHandlerService {
       case MessageType.SEARCH_MEMPOOL:
         await this.handleSearchMempool(message)
         break
-        
+
       case MessageType.DEPLOY_TOKEN_SUBNET:
         await this.handleDeployTokenSubnet(message)
         break
-        
+
       case MessageType.GENERATE_SUBNET_CODE:
         await this.handleGenerateSubnetCode(message)
+        break
+
+      case MessageType.EXECUTE_DEX_SWAP:
+        await this.handleExecuteDexSwap(message)
         break
 
       default:
@@ -251,6 +261,33 @@ export class MessageHandlerService {
   }
 
   /**
+   * Handle CLAIM_REWARDS message
+   */
+  async handleClaimRewards(message: Message): Promise<void> {
+    try {
+      const data = message.data as any
+      const result = await this.sendMessage<{ success: boolean, transaction: Transfer }>("createClaimRewardTx", data)
+
+      if (this.blockchainSlice) {
+        this.blockchainSlice.refreshStatus()
+        this.blockchainSlice.getAssetBalances(data.signer)
+      }
+
+      // Mask the signature to prevent unauthorized custody
+      if (result.transaction) {
+        result.transaction.signature = "[MASKED]";
+      }
+
+      respond(message, result)
+    } catch (error) {
+      respond(message, undefined, {
+        code: 'SIGN_CLAIM_REWARDS_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to sign rewards claim'
+      })
+    }
+  }
+
+  /**
    * Handle SEARCH_MEMPOOL message
    * This searches for transactions in the mempool that match given criteria
    */
@@ -318,7 +355,7 @@ export class MessageHandlerService {
       })
     }
   }
-  
+
   /**
    * Handle DEPLOY_TOKEN_SUBNET message
    * Deploys a token subnet wrapper contract
@@ -333,12 +370,12 @@ export class MessageHandlerService {
         batchSize: number;
         description?: string;
       };
-      
+
       // Validate basic parameters
       if (!params.tokenContract || !params.versionName || !params.versionNumber) {
         throw new Error("Required parameters missing: tokenContract, versionName, and versionNumber are required");
       }
-      
+
       // Forward to background script for processing
       const deploymentResult = await this.sendMessage<{
         success: boolean;
@@ -346,12 +383,12 @@ export class MessageHandlerService {
         contractId?: string;
         error?: string;
       }>("deployTokenSubnet", params);
-      
+
       // Refresh blockchain state after deployment
       if (this.blockchainSlice) {
         this.blockchainSlice.refreshStatus();
       }
-      
+
       respond(message, deploymentResult);
     } catch (error) {
       respond(message, undefined, {
@@ -360,7 +397,7 @@ export class MessageHandlerService {
       });
     }
   }
-  
+
   /**
    * Handle GENERATE_SUBNET_CODE message
    * Generates subnet wrapper contract code without deploying
@@ -375,24 +412,70 @@ export class MessageHandlerService {
         batchSize: number;
         description?: string;
       };
-      
+
       // Validate basic parameters
       if (!params.tokenContract || !params.versionName || !params.versionNumber) {
         throw new Error("Required parameters missing: tokenContract, versionName, and versionNumber are required");
       }
-      
+
       // Forward to background script for processing
       const codeResult = await this.sendMessage<{
         success: boolean;
         code?: string;
         error?: string;
       }>("generateSubnetCode", params);
-      
+
       respond(message, codeResult);
     } catch (error) {
       respond(message, undefined, {
         code: 'GENERATE_SUBNET_CODE_ERROR',
         message: error instanceof Error ? error.message : 'Failed to generate subnet code'
+      });
+    }
+  }
+
+  /**
+   * Handle EXECUTE_DEX_SWAP message
+   * Executes a swap operation via Dexterity SDK
+   */
+  async handleExecuteDexSwap(message: Message): Promise<void> {
+    try {
+      // Extract parameters from the message
+      const params = message.data as {
+        route: {
+          hops: Array<{
+            vault: any;
+            opcode: any;
+          }>;
+        };
+        amount: number;
+        options?: {
+          disablePostConditions?: boolean;
+          sponsored?: boolean;
+        };
+      };
+
+      // Validate basic parameters
+      if (!params.route || !params.route.hops || !Array.isArray(params.route.hops) || params.route.hops.length === 0) {
+        throw new Error("Required parameters missing: route with valid hops is required");
+      }
+
+      if (typeof params.amount !== 'number' || params.amount <= 0) {
+        throw new Error("Invalid amount: must be a positive number");
+      }
+
+      // Forward to background script for processing
+      const swapResult = await this.sendMessage<{
+        success: boolean;
+        txId?: string;
+        error?: string;
+      }>("executeDexSwap", params);
+
+      respond(message, swapResult);
+    } catch (error) {
+      respond(message, undefined, {
+        code: 'EXECUTE_DEX_SWAP_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to execute Dexterity swap'
       });
     }
   }

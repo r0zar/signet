@@ -1,5 +1,6 @@
 import { MessageType } from 'signet-sdk/src/messaging';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type { DexterityRoute } from 'signet-sdk';
 
 /**
  * Permission level for notifications
@@ -57,6 +58,19 @@ export interface DefaultPermissionContentProps extends PermissionContentProps {
 }
 
 /**
+ * Props for swap permission content
+ */
+export interface SwapPermissionContentProps extends PermissionContentProps {
+  route: DexterityRoute;
+  amount: number;
+  options?: {
+    disablePostConditions?: boolean;
+    sponsored?: boolean;
+    [key: string]: any;
+  };
+}
+
+/**
  * Permissions request object
  */
 export interface PermissionRequest {
@@ -65,4 +79,5 @@ export interface PermissionRequest {
   type: MessageType;
   timestamp: string;
   message: any;
+  data?: any
 }

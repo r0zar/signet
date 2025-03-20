@@ -249,6 +249,27 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
           batchSize: data.batchSize || 200,
           description: data.description
         }, subnetRegistry.signer); // Pass the current signer address
+        break
+
+      case "executeDexSwap":
+        // Execute a Dexterity swap transaction
+        if (!data?.route || !data?.amount) {
+          throw new Error("Required parameters missing for executing Dexterity swap");
+        }
+
+        // Get the current account to get the private key
+        const currentAccountForSwap = await wallet.getCurrentAccount();
+
+        // Execute the swap via our dexterity module
+        response = await dexterity.executeDexSwap(
+          {
+            route: data.route,
+            amount: data.amount,
+            options: data.options || {}
+          },
+          subnetRegistry.signer, // Current signer address
+          currentAccountForSwap?.privateKey // Private key if available
+        );
         break;
 
       case "processTx":
@@ -321,6 +342,35 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
         await subnetRegistry.processTxRequest(predictionTx);
 
         response = { success: true, transaction: predictionTx };
+        break;
+
+      case "createClaimRewardTx":
+        // Validate input data
+        if (!data.to || typeof data.receiptId !== "number" || typeof data.nonce !== "number") {
+          throw new Error("Invalid transfer data");
+        }
+
+        // Sign the transfer using the specified subnet
+        const receiptTransferSignature = await subnetRegistry.generateTransferSignature({
+          to: data.to,
+          amount: data.amount,
+          nonce: data.nonce
+        }, data.subnetId);
+
+        // Create claim reward transaction
+        const claimRewardTx: ClaimReward = {
+          type: TransactionType.CLAIM_REWARD,
+          subnetId: data.subnetId,
+          signature: receiptTransferSignature,
+          signer: subnetRegistry.signer,
+          nonce: data.nonce,
+          receiptId: data.receiptId
+        };
+
+        // Process it on the appropriate subnet
+        await subnetRegistry.processTxRequest(claimRewardTx);
+
+        response = { success: true, transaction: claimRewardTx };
         break;
 
       case "deposit":

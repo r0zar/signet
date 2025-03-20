@@ -11,6 +11,9 @@ import {
   TransferContent,
   TransactionCustodyContent,
   SearchMempoolContent,
+  SwapContent,
+  SignPredictionContent,
+  ClaimRewardsContent,
   DefaultPermissionContent
 } from './PermissionContent';
 
@@ -102,6 +105,37 @@ export class NotificationFactory {
           actions: this.getStandardActions()
         };
 
+      case MessageType.SIGN_PREDICTION:
+        return {
+          title: 'PREDICTION REQUEST',
+          type: 'SDK_PERMISSION',
+          color: colors.neonRed,
+          customIcon: CustomIcons.signPrediction,
+          message: (
+            <SignPredictionContent
+              origin={permission.origin}
+              rememberCheckbox={rememberCheckbox}
+            />
+          ),
+          actions: this.getStandardActions()
+        };
+
+      case MessageType.CLAIM_REWARDS:
+        return {
+          title: 'CLAIM REWARDS',
+          type: 'SDK_PERMISSION',
+          color: colors.neonOrange,
+          customIcon: CustomIcons.claimRewards,
+          message: (
+            <ClaimRewardsContent
+              origin={permission.origin}
+              rememberCheckbox={rememberCheckbox}
+            />
+          ),
+          actions: this.getStandardActions()
+        };
+
+
       case MessageType.REQUEST_TRANSACTION_CUSTODY:
         return {
           title: 'TRANSACTION CUSTODY REQUEST',
@@ -116,7 +150,7 @@ export class NotificationFactory {
           ),
           actions: this.getStandardActions()
         };
-        
+
       case MessageType.SEARCH_MEMPOOL:
         return {
           title: 'MEMPOOL ACCESS REQUEST',
@@ -127,6 +161,24 @@ export class NotificationFactory {
             <SearchMempoolContent
               origin={permission.origin}
               rememberCheckbox={rememberCheckbox}
+            />
+          ),
+          actions: this.getStandardActions()
+        };
+
+      case MessageType.EXECUTE_DEX_SWAP:
+        return {
+          title: 'TOKEN SWAP REQUEST',
+          type: 'SDK_PERMISSION',
+          color: colors.neonRed,
+          customIcon: CustomIcons.createSwap,
+          message: (
+            <SwapContent
+              origin={permission.origin}
+              rememberCheckbox={rememberCheckbox}
+              route={permission.data?.route}
+              amount={permission.data?.amount}
+              options={permission.data?.options}
             />
           ),
           actions: this.getStandardActions()

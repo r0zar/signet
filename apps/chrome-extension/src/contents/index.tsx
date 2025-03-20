@@ -12,7 +12,8 @@ export const config: PlasmoCSConfig = {
     "http://localhost:*/*",
     "https://bold-sheep-31.clerk.accounts.dev/*",
     "https://signet-omega.vercel.app/",
-    "https://www.oppredict.com/*"
+    "https://www.oppredict.com/*",
+    "https://charisma.rocks/*"
   ],
   all_frames: true
 }

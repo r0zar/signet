@@ -205,6 +205,19 @@ export async function signPrediction(data: any): Promise<any> {
 }
 
 /**
+ * Signature request for a prediction winnings claim transaction
+ */
+export async function claimRewards(data: any): Promise<any> {
+    try {
+        const response = await request<any, any>({ type: MessageType.CLAIM_REWARDS, data });
+        return response.data;
+    } catch (error) {
+        console.error('Failed to claim rewards:', error);
+        return { success: false };
+    }
+}
+
+/**
  * Search the mempool for transactions matching given criteria
  * 
  * @param criteria Object with search criteria like nonce, signer, type, etc.
@@ -424,7 +437,7 @@ export async function executeDexSwap(params: ExecuteSwapParams): Promise<Execute
             type: MessageType.EXECUTE_DEX_SWAP,
             data: params
         }, 0); // No timeout - wait for user confirmation
-        
+
         return response.data;
     } catch (error) {
         console.error('Failed to execute Dexterity swap:', error);

@@ -8,6 +8,21 @@ This guide provides a step-by-step process for adding support for new message ty
 Web App → Signet SDK → Chrome Extension (content script) → Background Service → Implementation
 ```
 
+## Complete Workflow Checklist
+
+Here's a complete checklist for adding a new message type:
+
+1. ✅ Add new message type to `MessageType` enum in `signet-sdk/src/messaging.ts`
+2. ✅ Define interface types in `signet-sdk/src/index.ts`
+3. ✅ Add helper function in `signet-sdk/src/index.ts`
+4. ✅ Add message type to supported list in `MessageHandlerService.isSupportedMessageType()`
+5. ✅ Add message handler method to `MessageHandlerService` class
+6. ✅ Add case to `handleMessage()` switch statement in `MessageHandlerService`
+7. ✅ Add message type to `MessageAction` type in `shared/context/types.ts`
+8. ✅ Implement integration module or function (if needed) in `background/lib/`
+9. ✅ Add case to background `handler.ts` switch statement
+10. ✅ Test the full message flow
+
 ## Step 1: Define the Message Type
 
 Add a new message type to the `MessageType` enum in `signet-sdk/src/messaging.ts`.
@@ -69,9 +84,25 @@ export async function myNewMessageFunction(params: MyNewMessageParams): Promise<
 }
 ```
 
-## Step 4: Add Message Handler in Extension
+## Step 4: Update MessageAction Type
 
-### 4.1 Update isSupportedMessageType
+Add your new message action to the `MessageAction` type in `shared/context/types.ts`:
+
+```typescript
+export type MessageAction =
+  | "getStatus"
+  | "getBalance"
+  | "getBalances"
+  // Existing actions...
+  | "myNewMessageAction"  // Add your new action here
+  // Wallet related actions...
+```
+
+This ensures type safety for message handlers and validates it at compile time.
+
+## Step 5: Add Message Handler in Extension
+
+### 5.1 Update isSupportedMessageType
 
 Add your new message type to the supported types list in `message-handler-service.ts`:
 
@@ -84,7 +115,7 @@ isSupportedMessageType(type: MessageType): boolean {
 }
 ```
 
-### 4.2 Add a message handler method
+### 5.2 Add a message handler method
 
 In the `MessageHandlerService` class, add a handler method for your new message:
 
@@ -123,7 +154,7 @@ async handleMyNewMessageType(message: Message): Promise<void> {
 }
 ```
 
-### 4.3 Update the handleMessage switch statement
+### 5.3 Update the handleMessage switch statement
 
 Add your new message type to the switch statement in `handleMessage`:
 
@@ -141,7 +172,38 @@ async handleMessage(message: Message): Promise<void> {
 }
 ```
 
-## Step 5: Implement Background Handler
+## Step 6: Implement Integration Module (if needed)
+
+If your message requires a new integration module (like Dexterity), create a dedicated file in `background/lib/` to handle the implementation details. For example:
+
+```typescript
+// In background/lib/my-integration.ts
+
+/**
+ * Implement the actual functionality for the message
+ */
+export async function performAction(params: {
+  paramOne: string;
+  paramTwo: number;
+  optionalParam?: boolean;
+}): Promise<{success: boolean; result?: any; error?: string}> {
+  try {
+    // Implementation logic here
+    
+    return {
+      success: true,
+      result: { /* your result data */ }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+```
+
+## Step 7: Implement Background Handler
 
 Update the background handler.ts file to handle your new message action:
 
@@ -154,7 +216,7 @@ case "myNewMessageAction":
   }
   
   // Implement the action
-  response = await someModule.performAction({
+  response = await myIntegration.performAction({
     paramOne: data.paramOne,
     paramTwo: data.paramTwo,
     optionalParam: data.optionalParam
@@ -162,11 +224,7 @@ case "myNewMessageAction":
   break;
 ```
 
-## Step 6: Implement Integration Module (if needed)
-
-If your message requires a new integration module (like Dexterity), create a dedicated file in `background/lib/` to handle the implementation details.
-
-## Step 7: Test the Message Flow
+## Step 8: Test the Message Flow
 
 1. Test SDK function directly in a web app
 2. Validate message is received by content script
@@ -207,8 +265,142 @@ Maintain consistent response structure:
 }
 ```
 
-## Example: Adding a Deployment Message Type
+## Example: Implementing EXECUTE_DEX_SWAP
 
-See the implementation of `DEPLOY_TOKEN_SUBNET` and `GENERATE_SUBNET_CODE` in the codebase for a complete example of adding new message types that interact with external services (Dexterity in this case).
+Here's how we implemented the `EXECUTE_DEX_SWAP` message type following this guide:
+
+1. Added `EXECUTE_DEX_SWAP` to the `MessageType` enum in `messaging.ts`:
+   ```typescript
+   export enum MessageType {
+     // Existing message types...
+     EXECUTE_DEX_SWAP = 'execute_dex_swap'
+   }
+   ```
+
+2. Added interface types in `index.ts`:
+   ```typescript
+   export interface ExecuteSwapParams {
+     route: DexterityRoute;
+     amount: number;
+     options?: {
+       disablePostConditions?: boolean;
+       sponsored?: boolean;
+     };
+   }
+
+   export interface ExecuteSwapResponse {
+     success: boolean;
+     txId?: string;
+     error?: string;
+   }
+   ```
+
+3. Added helper function in `index.ts`:
+   ```typescript
+   export async function executeDexSwap(params: ExecuteSwapParams): Promise<ExecuteSwapResponse> {
+     try {
+       const response = await request<ExecuteSwapParams, ExecuteSwapResponse>({
+         type: MessageType.EXECUTE_DEX_SWAP,
+         data: params
+       }, 0);
+       
+       return response.data;
+     } catch (error) {
+       console.error('Failed to execute Dexterity swap:', error);
+       return {
+         success: false,
+         error: error instanceof Error ? error.message : 'Unknown error'
+       };
+     }
+   }
+   ```
+
+4. Added `executeDexSwap` to the `MessageAction` type in `types.ts`:
+   ```typescript
+   export type MessageAction =
+     // Existing actions...
+     | "executeDexSwap"
+     // Other actions...
+   ```
+
+5. Updated `isSupportedMessageType` in `message-handler-service.ts`:
+   ```typescript
+   isSupportedMessageType(type: MessageType): boolean {
+     return [
+       // Existing types...
+       MessageType.EXECUTE_DEX_SWAP
+     ].includes(type)
+   }
+   ```
+
+6. Added handler method in `message-handler-service.ts`:
+   ```typescript
+   async handleExecuteDexSwap(message: Message): Promise<void> {
+     try {
+       // Extract parameters and validate
+       const params = message.data as {
+         route: { hops: Array<any> };
+         amount: number;
+         options?: any;
+       };
+       
+       // Validate params
+       if (!params.route || !params.route.hops || !Array.isArray(params.route.hops)) {
+         throw new Error("Required parameters missing");
+       }
+       
+       // Forward to background script
+       const result = await this.sendMessage<{
+         success: boolean;
+         txId?: string;
+         error?: string;
+       }>("executeDexSwap", params);
+       
+       respond(message, result);
+     } catch (error) {
+       respond(message, undefined, {
+         code: 'EXECUTE_DEX_SWAP_ERROR',
+         message: error instanceof Error ? error.message : 'Failed to execute swap'
+       });
+     }
+   }
+   ```
+
+7. Added implementation in `dexterity.ts`:
+   ```typescript
+   export async function executeDexSwap(
+     params: {
+       route: any;
+       amount: number;
+       options?: any;
+     },
+     stxAddress: string,
+     privateKey?: string
+   ): Promise<{ success: boolean; txId?: string; error?: string }> {
+     try {
+       // Implementation details...
+       return { success: true, txId: "..." };
+     } catch (error) {
+       return {
+         success: false,
+         error: error instanceof Error ? error.message : "Unknown error"
+       };
+     }
+   }
+   ```
+
+8. Added case in background `handler.ts`:
+   ```typescript
+   case "executeDexSwap":
+     // Validate and process
+     response = await dexterity.executeDexSwap(
+       data,
+       subnetRegistry.signer,
+       (await wallet.getCurrentAccount())?.privateKey
+     );
+     break;
+   ```
+
+This complete example demonstrates all the necessary steps to implement a new message type in the Signet ecosystem.
 
 By following this guide, you ensure that all parts of the Signet SDK ecosystem are properly updated to support your new message type.

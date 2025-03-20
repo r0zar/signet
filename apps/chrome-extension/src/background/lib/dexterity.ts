@@ -5,7 +5,10 @@
  * including token subnet deployment and other blockchain interactions.
  */
 
-import { Dexterity, type SubnetWrapperParams, type DeploymentResult } from "dexterity-sdk";
+import type { TxBroadcastResultOk } from "@stacks/transactions";
+import { Dexterity, type SubnetWrapperParams, type DeploymentResult, type Route } from "dexterity-sdk";
+import { Opcode } from "dexterity-sdk/dist/core/opcode";
+import { Vault } from "dexterity-sdk/dist/core/vault";
 
 /**
  * Configure Dexterity SDK with the appropriate settings
@@ -20,6 +23,82 @@ export async function configureDexterity(stxAddress: string, network: 'mainnet' 
   });
 
   console.log(`Dexterity configured with address: ${stxAddress}, network: ${network}`);
+}
+
+/**
+ * Execute a swap operation using Dexterity SDK
+ * @param params The swap parameters including route, amount, and options
+ * @param stxAddress The STX address to use for the swap
+ * @param privateKey Optional private key for signing the transaction
+ * @returns Promise resolving to swap result
+ */
+export async function executeDexSwap(
+  params: {
+    route: any;
+    amount: number;
+    options?: {
+      disablePostConditions?: boolean;
+      sponsored?: boolean;
+    };
+  },
+  stxAddress: string,
+  privateKey?: string
+): Promise<{ success: boolean; txId?: string; error?: string }> {
+  try {
+    // Configure Dexterity first
+    await configureDexterity(stxAddress);
+
+    // Set sponsored option if provided
+    if (params.options?.sponsored !== undefined) {
+      Dexterity.config.sponsored = params.options.sponsored;
+    }
+
+    // Validate the route and hops
+    if (!params.route || !params.route.hops || !Array.isArray(params.route.hops) || params.route.hops.length === 0) {
+      return {
+        success: false,
+        error: "Required parameters missing: route with valid hops is required"
+      };
+    }
+
+    // Build properly typed route hops
+    const hops = [];
+    for (const hop of params.route.hops) {
+      const vault = await Vault.build(hop.vault.contractId);
+      const opcode = new Opcode(hop.opcode.code);
+      hops.push({ ...hop, vault, opcode });
+    }
+    params.route.hops = hops;
+
+    // Enhanced options with credentials included directly
+    const enhancedOptions = {
+      ...params.options,
+      disablePostConditions: params.options?.disablePostConditions || false,
+      // Include credentials directly in the options object
+      privateKey: privateKey,
+      stxAddress: stxAddress
+    };
+
+    // Execute the swap with the enhanced options
+    const result = await Dexterity.router.executeSwap(
+      params.route,
+      params.amount,
+      enhancedOptions
+    );
+
+    // Return the successful result with txId
+    return {
+      success: true,
+      txId: (result as TxBroadcastResultOk).txid
+    };
+  } catch (error) {
+    // Handle any unexpected errors
+    console.error("Error executing Dexterity swap:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error executing Dexterity swap"
+    };
+  }
 }
 
 /**
@@ -109,11 +188,11 @@ export async function generateSubnetCode(params: {
 
     // Generate code using new Dexterity.generateSubnetCode function
     const codeResult = Dexterity.generateSubnetCode(subnetParams);
-    
+
     return {
       success: true,
-      code: codeResult.code,
-      contractId: codeResult.contractId
+      ...codeResult,
+      code: codeResult.code
     };
   } catch (error) {
     return {
