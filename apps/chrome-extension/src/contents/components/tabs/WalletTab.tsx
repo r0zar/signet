@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useSignetContext } from '~shared/context/SignetContext';
 import { colors } from '../../../shared/styles/theme';
 import { motion } from 'framer-motion';
+import { saveEncryptedWalletBackup } from '~shared/context/utils';
 
 export function WalletTab() {
   const {
@@ -995,13 +996,30 @@ export function WalletTab() {
             </motion.button>
           </div>
 
-          {/* Sign out and Reset wallet buttons */}
+          {/* Export, Sign out and Reset wallet buttons */}
           <div style={{
             display: 'flex',
             gap: '8px',
             justifyContent: 'center',
             marginTop: '8px'
           }}>
+            <motion.button
+              onClick={() => saveEncryptedWalletBackup()}
+              whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(54, 199, 88, 0.4)' }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                padding: '6px 10px',
+                background: 'rgba(54, 199, 88, 0.1)',
+                border: '1px solid rgba(54, 199, 88, 0.4)',
+                borderRadius: '4px',
+                color: '#36C758',
+                cursor: 'pointer',
+                fontSize: '10px'
+              }}
+            >
+              Export Wallet
+            </motion.button>
+
             <motion.button
               onClick={handleSignOut}
               whileHover={{ scale: 1.02, boxShadow: '0 0 8px rgba(125, 249, 255, 0.4)' }}

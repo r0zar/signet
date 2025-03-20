@@ -208,6 +208,10 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
       case "resetWallet":
         response = await wallet.resetWallet();
         break;
+        
+      case "exportWalletData":
+        response = await wallet.exportWalletData();
+        break;
 
       case "deployTokenSubnet":
         // Validate the token subnet parameters

@@ -19,3 +19,78 @@ export async function sendMessage<T>(action: MessageAction, data?: any): Promise
     throw error;
   }
 }
+
+/**
+ * Show a notification message to the user
+ */
+function showNotification(message: string, isSuccess: boolean = true): void {
+  const notification = document.createElement('div');
+  notification.innerText = message;
+  notification.style.position = 'fixed';
+  notification.style.bottom = '20px';
+  notification.style.left = '50%';
+  notification.style.transform = 'translateX(-50%)';
+  notification.style.padding = '10px 20px';
+  notification.style.backgroundColor = isSuccess ? 'rgba(54, 199, 88, 0.9)' : 'rgba(255, 78, 78, 0.9)';
+  notification.style.color = 'white';
+  notification.style.borderRadius = '4px';
+  notification.style.zIndex = '999999';
+  notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+  document.body.appendChild(notification);
+
+  // Remove the message after 3 seconds
+  setTimeout(() => {
+    document.body.removeChild(notification);
+  }, 3000);
+}
+
+/**
+ * Save wallet backup to disk as a JSON file
+ */
+export async function saveEncryptedWalletBackup(): Promise<boolean> {
+  try {
+    // Get wallet data from the background script
+    const walletData = await sendMessage<{data: any, password: string} | null>("exportWalletData");
+    
+    if (!walletData || !walletData.data) {
+      throw new Error("Failed to get wallet data for export");
+    }
+    
+    // Create a JSON string from the wallet data
+    const walletJsonData = JSON.stringify(walletData.data, null, 2);
+    
+    // Current timestamp for filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `signet-${timestamp}.json`;
+    
+    // Create a Blob with the JSON data
+    const jsonBlob = new Blob([walletJsonData], { type: 'application/json' });
+    
+    // Create a download URL
+    const downloadUrl = URL.createObjectURL(jsonBlob);
+    
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    
+    // Append to the document
+    document.body.appendChild(link);
+    
+    // Programmatically click the link to trigger the download
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(downloadUrl);
+    
+    // Show success notification
+    showNotification('Wallet exported successfully!', true);
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving wallet backup:", error);
+    showNotification('Failed to export wallet data', false);
+    return false;
+  }
+}

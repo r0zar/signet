@@ -25,6 +25,7 @@ export interface WalletActions {
   hasActiveSession: () => Promise<boolean>
   initializeFromSession: () => Promise<boolean>
   endSession: () => Promise<boolean>
+  exportWalletData: () => Promise<{data: any, password: string} | null>
 }
 
 export type WalletSlice = WalletState & WalletActions
@@ -406,6 +407,16 @@ export function useWalletSlice(
       return false;
     }
   }
+  
+  // Export wallet data for backup
+  const exportWalletData = async (): Promise<{data: any, password: string} | null> => {
+    try {
+      return await sendMessage<{data: any, password: string} | null>("exportWalletData");
+    } catch (err) {
+      console.error("Error exporting wallet data:", err);
+      return null;
+    }
+  }
 
   return {
     // State
@@ -429,6 +440,7 @@ export function useWalletSlice(
     checkWalletInitialization,
     hasActiveSession,
     initializeFromSession,
-    endSession
+    endSession,
+    exportWalletData
   }
 }

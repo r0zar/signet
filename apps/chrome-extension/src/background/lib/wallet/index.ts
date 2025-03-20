@@ -20,7 +20,8 @@ import {
   walletPassword,
   hasValidWalletSession,
   getWalletSessionPassword,
-  clearWalletSession
+  clearWalletSession,
+  getWalletState
 } from './storage';
 
 import {
@@ -205,6 +206,39 @@ export async function resetWallet(): Promise<boolean> {
   }
 
   return await clearWalletData();
+}
+
+/**
+ * Export wallet data for backup
+ * Returns wallet state and the password needed to encrypt it
+ */
+export async function exportWalletData(): Promise<{ data: any, password: string } | null> {
+  if (!isSecureStorageReady()) {
+    throw new Error("Secure storage not initialized");
+  }
+
+  try {
+    // Get all wallet data
+    const walletState = await getWalletState();
+    if (!walletState) {
+      throw new Error("Failed to get wallet state");
+    }
+
+    // Get current wallet password that's stored in memory
+    const password = walletPassword;
+    if (!password) {
+      throw new Error("No wallet password available");
+    }
+
+    // Return the structured data for backup with the password
+    return {
+      data: walletState,
+      password
+    };
+  } catch (error) {
+    console.error("Failed to export wallet data:", error);
+    return null;
+  }
 }
 
 // Re-export storage functions and types for convenience

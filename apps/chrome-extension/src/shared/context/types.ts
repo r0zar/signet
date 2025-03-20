@@ -42,7 +42,8 @@ export type MessageAction =
   | "activateAccount"
   | "getCurrentAccount"
   | "deleteAccount"
-  | "resetWallet";
+  | "resetWallet"
+  | "exportWalletData";
 
 // Wallet types
 export interface SeedPhrase {
